@@ -15,7 +15,7 @@ export interface Story {
   priority: StoryPriority;
   points: number;
   epicId?: string;
-  sprintId?: string;
+  sprintId?: string;  // Changed to string instead of number
   assigneeId?: string;
   reporterId: string;
   tags: string[];
@@ -36,7 +36,7 @@ export interface StoryWithRelations extends Story {
     name: string;
   };
   sprint?: {
-    id: number;
+    id: string;  // Changed to string to match sprintId
     name: string;
   };
   assignee?: User;
@@ -54,7 +54,7 @@ export const mockStories: StoryWithRelations[] = [
     priority: 'high',
     points: 8,
     epicId: 'EP-01',
-    sprintId: 1,
+    sprintId: '1',  // Changed to string
     assigneeId: 'user-123',
     reporterId: 'user-456',
     tags: ['authentication', 'security', 'frontend'],
@@ -76,7 +76,7 @@ export const mockStories: StoryWithRelations[] = [
       name: 'User Authentication & Authorization'
     },
     sprint: {
-      id: 1,
+      id: '1',  // Changed to string
       name: 'Sprint 23'
     },
     assignee: {
@@ -101,7 +101,7 @@ export const mockStories: StoryWithRelations[] = [
     priority: 'medium',
     points: 5,
     epicId: 'EP-02',
-    sprintId: 1,
+    sprintId: '1',  // Changed to string
     assigneeId: 'user-123',
     reporterId: 'user-789',
     tags: ['dashboard', 'frontend', 'ui'],
@@ -123,7 +123,7 @@ export const mockStories: StoryWithRelations[] = [
       name: 'Dashboard Experience'
     },
     sprint: {
-      id: 1,
+      id: '1',  // Changed to string
       name: 'Sprint 23'
     },
     assignee: {
@@ -148,7 +148,7 @@ export const mockStories: StoryWithRelations[] = [
     priority: 'high',
     points: 3,
     epicId: 'EP-01',
-    sprintId: 1,
+    sprintId: '1',  // Changed to string
     assigneeId: 'user-789',
     reporterId: 'user-456',
     tags: ['bug', 'authentication', 'frontend'],
@@ -169,7 +169,7 @@ export const mockStories: StoryWithRelations[] = [
       name: 'User Authentication & Authorization'
     },
     sprint: {
-      id: 1,
+      id: '1',  // Changed to string
       name: 'Sprint 23'
     },
     assignee: {
@@ -194,7 +194,7 @@ export const mockStories: StoryWithRelations[] = [
     priority: 'medium',
     points: 5,
     epicId: 'EP-03',
-    sprintId: 2,
+    sprintId: '2',  // Changed to string
     assigneeId: undefined,
     reporterId: 'user-456',
     tags: ['performance', 'backend', 'caching'],
@@ -216,7 +216,7 @@ export const mockStories: StoryWithRelations[] = [
       name: 'Platform Performance Optimization'
     },
     sprint: {
-      id: 2,
+      id: '2',  // Changed to string
       name: 'Sprint 24'
     },
     reporter: {
@@ -235,7 +235,7 @@ export const mockStories: StoryWithRelations[] = [
     priority: 'low',
     points: 3,
     epicId: 'EP-02',
-    sprintId: 1,
+    sprintId: '1',  // Changed to string
     assigneeId: 'user-456',
     reporterId: 'user-456',
     tags: ['research', 'visualization', 'frontend'],
@@ -257,7 +257,7 @@ export const mockStories: StoryWithRelations[] = [
       name: 'Dashboard Experience'
     },
     sprint: {
-      id: 1,
+      id: '1',  // Changed to string
       name: 'Sprint 23'
     },
     assignee: {

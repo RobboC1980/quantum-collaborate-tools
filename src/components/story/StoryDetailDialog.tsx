@@ -391,8 +391,8 @@ const StoryDetailDialog: React.FC<StoryDetailDialogProps> = ({
                 <div className="space-y-2">
                   <Label htmlFor="sprint">Sprint</Label>
                   <Select 
-                    value={formData.sprintId?.toString() || ''} 
-                    onValueChange={(value) => handleChange('sprintId', value ? parseInt(value) : undefined)}
+                    value={formData.sprintId || ''} 
+                    onValueChange={(value) => handleChange('sprintId', value)}
                   >
                     <SelectTrigger>
                       <SelectValue placeholder="Select sprint" />

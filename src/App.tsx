@@ -12,6 +12,7 @@ import Dashboard from "./pages/Dashboard";
 import AdminDashboard from "./pages/AdminDashboard";
 import SprintManagement from "./pages/SprintManagement";
 import StoryManagement from "./pages/StoryManagement";
+import TaskManagement from "./pages/TaskManagement";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -55,6 +56,14 @@ const App = () => (
               element={
                 <ProtectedRoute>
                   <StoryManagement />
+                </ProtectedRoute>
+              } 
+            />
+            <Route 
+              path="/dashboard/tasks" 
+              element={
+                <ProtectedRoute>
+                  <TaskManagement />
                 </ProtectedRoute>
               } 
             />
