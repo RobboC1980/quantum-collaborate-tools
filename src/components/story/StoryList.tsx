@@ -3,21 +3,29 @@ import React, { useState } from 'react';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { PlusCircle, Search, Filter } from 'lucide-react';
+import { PlusCircle, Search, Filter, Trash2, Edit, MoreVertical } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import StoryCard from './StoryCard';
 import { StoryWithRelations } from '@/types/story';
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 
 interface StoryListProps {
   stories: StoryWithRelations[];
   onCreateStory?: () => void;
   onSelectStory?: (story: StoryWithRelations) => void;
+  onDeleteStory?: (story: StoryWithRelations) => void;
 }
 
 const StoryList: React.FC<StoryListProps> = ({
   stories,
   onCreateStory,
-  onSelectStory
+  onSelectStory,
+  onDeleteStory
 }) => {
   const [searchTerm, setSearchTerm] = useState('');
   const [statusFilter, setStatusFilter] = useState<string>('all');
@@ -110,11 +118,40 @@ const StoryList: React.FC<StoryListProps> = ({
           {filteredStories.length > 0 ? (
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
               {filteredStories.map((story) => (
-                <StoryCard
-                  key={story.id}
-                  story={story}
-                  onClick={() => onSelectStory && onSelectStory(story)}
-                />
+                <div key={story.id} className="relative group">
+                  <StoryCard
+                    story={story}
+                    onClick={() => onSelectStory && onSelectStory(story)}
+                  />
+                  <div className="absolute top-2 right-2 opacity-0 group-hover:opacity-100 transition-opacity">
+                    <DropdownMenu>
+                      <DropdownMenuTrigger asChild>
+                        <Button variant="ghost" size="sm" className="h-8 w-8 p-0">
+                          <MoreVertical size={16} />
+                        </Button>
+                      </DropdownMenuTrigger>
+                      <DropdownMenuContent align="end">
+                        <DropdownMenuItem onClick={(e) => {
+                          e.stopPropagation();
+                          onSelectStory && onSelectStory(story);
+                        }}>
+                          <Edit className="mr-2 h-4 w-4" />
+                          Edit
+                        </DropdownMenuItem>
+                        <DropdownMenuItem
+                          className="text-destructive focus:text-destructive"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            onDeleteStory && onDeleteStory(story);
+                          }}
+                        >
+                          <Trash2 className="mr-2 h-4 w-4" />
+                          Delete
+                        </DropdownMenuItem>
+                      </DropdownMenuContent>
+                    </DropdownMenu>
+                  </div>
+                </div>
               ))}
             </div>
           ) : (

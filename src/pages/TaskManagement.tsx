@@ -2,7 +2,7 @@
 import React, { useState } from 'react';
 import DashboardLayout from '@/components/layout/DashboardLayout';
 import { Button } from '@/components/ui/button';
-import { PlusCircle, Filter, Search, ChevronDown } from 'lucide-react';
+import { PlusCircle, Filter, Search, ChevronDown, Trash2 } from 'lucide-react';
 import { 
   DropdownMenu, 
   DropdownMenuContent, 
@@ -14,9 +14,21 @@ import TaskBoard from '@/components/task/TaskBoard';
 import TaskDetailDialog from '@/components/task/TaskDetailDialog';
 import { mockTasks, TaskWithRelations, TaskStatus } from '@/types/task';
 import { mockStories } from '@/types/story';
+import { useToast } from '@/components/ui/use-toast';
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 
 const TaskManagement = () => {
   const [isTaskDialogOpen, setIsTaskDialogOpen] = useState(false);
+  const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
   const [selectedTask, setSelectedTask] = useState<TaskWithRelations | undefined>(undefined);
   const [tasks, setTasks] = useState(mockTasks);
   const [searchTerm, setSearchTerm] = useState('');
@@ -25,6 +37,8 @@ const TaskManagement = () => {
     assignees: [] as string[],
     priorities: ['low', 'medium', 'high', 'critical']
   });
+  
+  const { toast } = useToast();
   
   const handleCreateTask = () => {
     setSelectedTask(undefined);
@@ -36,9 +50,12 @@ const TaskManagement = () => {
     setIsTaskDialogOpen(true);
   };
   
+  const handleDeleteClick = (task: TaskWithRelations) => {
+    setSelectedTask(task);
+    setIsDeleteDialogOpen(true);
+  };
+  
   const handleSaveTask = (task: TaskWithRelations) => {
-    console.log('Task saved:', task);
-    
     // Update the tasks list
     setTasks(prevTasks => {
       const taskIndex = prevTasks.findIndex(t => t.id === task.id);
@@ -46,9 +63,20 @@ const TaskManagement = () => {
         // Update existing task
         const newTasks = [...prevTasks];
         newTasks[taskIndex] = task;
+        
+        toast({
+          title: "Task updated",
+          description: `"${task.title}" has been updated successfully.`,
+        });
+        
         return newTasks;
       } else {
         // Add new task
+        toast({
+          title: "Task created",
+          description: `"${task.title}" has been created successfully.`,
+        });
+        
         return [...prevTasks, task];
       }
     });
@@ -56,10 +84,25 @@ const TaskManagement = () => {
     setIsTaskDialogOpen(false);
   };
   
+  const handleDeleteTask = () => {
+    if (!selectedTask) return;
+    
+    setTasks(prevTasks => prevTasks.filter(task => task.id !== selectedTask.id));
+    
+    toast({
+      title: "Task deleted",
+      description: `"${selectedTask.title}" has been deleted.`,
+      variant: "destructive",
+    });
+    
+    setIsDeleteDialogOpen(false);
+    setSelectedTask(undefined);
+  };
+  
   const handleMoveTask = (taskId: string, newStatus: TaskStatus) => {
     // Update task status
     setTasks(prevTasks => {
-      return prevTasks.map(task => {
+      const updatedTasks = prevTasks.map(task => {
         if (task.id === taskId) {
           return {
             ...task,
@@ -69,6 +112,16 @@ const TaskManagement = () => {
         }
         return task;
       });
+      
+      const movedTask = updatedTasks.find(t => t.id === taskId);
+      if (movedTask) {
+        toast({
+          title: "Task moved",
+          description: `"${movedTask.title}" moved to ${newStatus.replace('-', ' ')}.`,
+        });
+      }
+      
+      return updatedTasks;
     });
   };
   
@@ -162,6 +215,7 @@ const TaskManagement = () => {
           tasks={filteredTasks}
           onCreateTask={handleCreateTask}
           onSelectTask={handleEditTask}
+          onDeleteTask={handleDeleteClick}
           onMoveTask={handleMoveTask}
         />
         
@@ -172,6 +226,29 @@ const TaskManagement = () => {
           onSave={handleSaveTask}
           task={selectedTask}
         />
+        
+        {/* Delete Confirmation Dialog */}
+        <AlertDialog open={isDeleteDialogOpen} onOpenChange={setIsDeleteDialogOpen}>
+          <AlertDialogContent>
+            <AlertDialogHeader>
+              <AlertDialogTitle>Are you sure?</AlertDialogTitle>
+              <AlertDialogDescription>
+                This will permanently delete the task "
+                {selectedTask?.title}". This action cannot be undone.
+              </AlertDialogDescription>
+            </AlertDialogHeader>
+            <AlertDialogFooter>
+              <AlertDialogCancel>Cancel</AlertDialogCancel>
+              <AlertDialogAction 
+                onClick={handleDeleteTask} 
+                className="bg-destructive text-destructive-foreground"
+              >
+                <Trash2 className="mr-2 h-4 w-4" />
+                Delete
+              </AlertDialogAction>
+            </AlertDialogFooter>
+          </AlertDialogContent>
+        </AlertDialog>
       </div>
     </DashboardLayout>
   );

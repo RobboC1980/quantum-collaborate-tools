@@ -2,14 +2,21 @@
 import React, { useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { PlusCircle, MoreHorizontal, AlertCircle } from 'lucide-react';
+import { PlusCircle, MoreHorizontal, Trash2, Edit } from 'lucide-react';
 import TaskCard from './TaskCard';
 import { TaskWithRelations, TaskStatus } from '@/types/task';
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 
 interface TaskBoardProps {
   tasks: TaskWithRelations[];
   onCreateTask?: () => void;
   onSelectTask?: (task: TaskWithRelations) => void;
+  onDeleteTask?: (task: TaskWithRelations) => void;
   onMoveTask?: (taskId: string, newStatus: TaskStatus) => void;
 }
 
@@ -17,6 +24,7 @@ const TaskBoard: React.FC<TaskBoardProps> = ({
   tasks,
   onCreateTask,
   onSelectTask,
+  onDeleteTask,
   onMoveTask
 }) => {
   // Define columns for the board
@@ -97,12 +105,41 @@ const TaskBoard: React.FC<TaskBoardProps> = ({
                           key={task.id}
                           draggable
                           onDragStart={() => handleDragStart(task.id)}
+                          className="relative group"
                         >
                           <TaskCard 
                             task={task} 
                             onClick={() => onSelectTask && onSelectTask(task)}
                             isDragging={draggedTask === task.id}
                           />
+                          <div className="absolute top-2 right-2 opacity-0 group-hover:opacity-100 transition-opacity">
+                            <DropdownMenu>
+                              <DropdownMenuTrigger asChild>
+                                <Button variant="ghost" size="sm" className="h-6 w-6 p-0 bg-white bg-opacity-90">
+                                  <MoreHorizontal size={13} />
+                                </Button>
+                              </DropdownMenuTrigger>
+                              <DropdownMenuContent align="end">
+                                <DropdownMenuItem onClick={(e) => {
+                                  e.stopPropagation();
+                                  onSelectTask && onSelectTask(task);
+                                }}>
+                                  <Edit className="mr-2 h-4 w-4" />
+                                  Edit
+                                </DropdownMenuItem>
+                                <DropdownMenuItem
+                                  className="text-destructive focus:text-destructive"
+                                  onClick={(e) => {
+                                    e.stopPropagation();
+                                    onDeleteTask && onDeleteTask(task);
+                                  }}
+                                >
+                                  <Trash2 className="mr-2 h-4 w-4" />
+                                  Delete
+                                </DropdownMenuItem>
+                              </DropdownMenuContent>
+                            </DropdownMenu>
+                          </div>
                         </div>
                       ))
                     ) : (

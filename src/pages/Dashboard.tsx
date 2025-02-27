@@ -13,7 +13,9 @@ import {
   Activity,
   PlusCircle,
   ListTodo,
-  ArrowRight
+  ArrowRight,
+  FileText,
+  CheckSquare
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -21,6 +23,7 @@ import SprintSummaryCard from '@/components/sprint/SprintSummaryCard';
 import StoryList from '@/components/story/StoryList';
 import StoryDetailDialog from '@/components/story/StoryDetailDialog';
 import { mockStories } from '@/types/story';
+import { mockTasks } from '@/types/task';
 
 const Dashboard = () => {
   const navigate = useNavigate();
@@ -92,20 +95,15 @@ const Dashboard = () => {
   };
   
   const handleCreateStory = () => {
-    setSelectedStory(null);
-    setIsStoryDialogOpen(true);
+    navigate('/dashboard/stories');
   };
   
   const handleEditStory = (story: any) => {
-    setSelectedStory(story);
-    setIsStoryDialogOpen(true);
+    navigate(`/dashboard/stories?id=${story.id}`);
   };
   
-  const handleSaveStory = (story: any) => {
-    console.log('Story saved:', story);
-    // In a real app, we would save to the database
-    // For now, we'll just close the dialog
-    setIsStoryDialogOpen(false);
+  const handleCreateTask = () => {
+    navigate('/dashboard/tasks');
   };
 
   return (
@@ -195,6 +193,53 @@ const Dashboard = () => {
           </Card>
         </div>
 
+        {/* Project Management Quick Links */}
+        <div className="grid gap-4 grid-cols-1 md:grid-cols-2 lg:grid-cols-4">
+          <Card className="bg-blue-50 border-blue-200 hover:bg-blue-100 transition-colors cursor-pointer" onClick={() => navigate('/dashboard/sprints')}>
+            <CardContent className="p-6 flex flex-col items-center text-center">
+              <CalendarDays className="h-10 w-10 mb-3 text-blue-600" />
+              <h3 className="font-medium text-lg">Sprints</h3>
+              <p className="text-sm text-muted-foreground mb-4">Manage sprint planning and execution</p>
+              <div className="text-xs bg-blue-500 text-white px-2 py-1 rounded-full">
+                {mockSprints.filter(s => s.status === 'active').length} Active
+              </div>
+            </CardContent>
+          </Card>
+
+          <Card className="bg-green-50 border-green-200 hover:bg-green-100 transition-colors cursor-pointer" onClick={() => navigate('/dashboard/stories')}>
+            <CardContent className="p-6 flex flex-col items-center text-center">
+              <FileText className="h-10 w-10 mb-3 text-green-600" />
+              <h3 className="font-medium text-lg">Stories</h3>
+              <p className="text-sm text-muted-foreground mb-4">Create and manage user stories</p>
+              <div className="text-xs bg-green-500 text-white px-2 py-1 rounded-full">
+                {mockStories.length} Total
+              </div>
+            </CardContent>
+          </Card>
+
+          <Card className="bg-purple-50 border-purple-200 hover:bg-purple-100 transition-colors cursor-pointer" onClick={() => navigate('/dashboard/tasks')}>
+            <CardContent className="p-6 flex flex-col items-center text-center">
+              <CheckSquare className="h-10 w-10 mb-3 text-purple-600" />
+              <h3 className="font-medium text-lg">Tasks</h3>
+              <p className="text-sm text-muted-foreground mb-4">Track and manage implementation tasks</p>
+              <div className="text-xs bg-purple-500 text-white px-2 py-1 rounded-full">
+                {mockTasks.length} Total
+              </div>
+            </CardContent>
+          </Card>
+
+          <Card className="bg-amber-50 border-amber-200 hover:bg-amber-100 transition-colors cursor-pointer" onClick={() => navigate('/dashboard/epics')}>
+            <CardContent className="p-6 flex flex-col items-center text-center">
+              <Layers className="h-10 w-10 mb-3 text-amber-600" />
+              <h3 className="font-medium text-lg">Epics</h3>
+              <p className="text-sm text-muted-foreground mb-4">Organize work into epics and features</p>
+              <div className="text-xs bg-amber-500 text-white px-2 py-1 rounded-full">
+                3 Active
+              </div>
+            </CardContent>
+          </Card>
+        </div>
+
         {/* Main Content Area with Tabs */}
         <Tabs defaultValue="overview" className="space-y-4">
           <TabsList>
@@ -209,7 +254,7 @@ const Dashboard = () => {
             <div>
               <div className="flex items-center justify-between mb-4">
                 <h2 className="text-lg font-medium">Sprints</h2>
-                <Button variant="outline" size="sm" className="h-8 gap-1">
+                <Button variant="outline" size="sm" className="h-8 gap-1" onClick={() => navigate('/dashboard/sprints')}>
                   <PlusCircle size={14} />
                   New Sprint
                 </Button>
@@ -311,6 +356,15 @@ const Dashboard = () => {
                         </Button>
                       </div>
                     ))}
+                    <Button 
+                      variant="outline" 
+                      size="sm" 
+                      className="w-full mt-2"
+                      onClick={handleCreateStory}
+                    >
+                      <PlusCircle size={14} className="mr-1" />
+                      Create New Story
+                    </Button>
                   </div>
                 </CardContent>
               </Card>
@@ -352,8 +406,15 @@ const Dashboard = () => {
           </TabsContent>
           
           <TabsContent value="stories">
+            <div className="mb-4 flex justify-between items-center">
+              <h2 className="text-lg font-medium">My Stories</h2>
+              <Button onClick={handleCreateStory}>
+                <PlusCircle size={16} className="mr-2" />
+                Create Story
+              </Button>
+            </div>
             <StoryList 
-              stories={mockStories}
+              stories={mockStories.filter(story => story.assigneeId === 'user-123')} // Filter to show only stories assigned to current user
               onCreateStory={handleCreateStory}
               onSelectStory={handleEditStory}
             />
@@ -376,30 +437,57 @@ const Dashboard = () => {
           </TabsContent>
           
           <TabsContent value="tasks">
+            <div className="mb-4 flex justify-between items-center">
+              <h2 className="text-lg font-medium">My Tasks</h2>
+              <Button onClick={handleCreateTask}>
+                <PlusCircle size={16} className="mr-2" />
+                Create Task
+              </Button>
+            </div>
             <Card>
-              <CardHeader>
-                <CardTitle>My Tasks</CardTitle>
-                <CardDescription>
-                  View and manage your assigned tasks
-                </CardDescription>
-              </CardHeader>
-              <CardContent>
-                <div className="h-[300px] flex items-center justify-center border border-dashed rounded-md">
-                  <p className="text-muted-foreground">Task management interface will be displayed here</p>
+              <CardContent className="p-4">
+                <div className="space-y-4">
+                  {mockTasks.filter(task => task.assigneeId === 'user-123').slice(0, 5).map(task => (
+                    <div key={task.id} className="flex items-center justify-between p-3 border rounded-md hover:bg-gray-50">
+                      <div className="flex-1">
+                        <div className="flex items-center gap-2">
+                          <span className="text-xs font-mono text-muted-foreground">{task.id}</span>
+                          <Badge className={task.priority === 'high' ? 'bg-red-100 text-red-800' : 'bg-blue-100 text-blue-800'}>
+                            {task.priority}
+                          </Badge>
+                        </div>
+                        <h4 className="font-medium text-sm mt-1">{task.title}</h4>
+                        <div className="flex items-center gap-2 mt-1">
+                          <div className="text-xs text-muted-foreground">
+                            {task.story?.id}: {task.story?.title.substring(0, 20)}...
+                          </div>
+                          <Badge variant="outline" className="text-xs">
+                            {task.status.replace('-', ' ')}
+                          </Badge>
+                        </div>
+                      </div>
+                      <Button 
+                        variant="ghost" 
+                        size="sm" 
+                        onClick={() => navigate(`/dashboard/tasks?taskId=${task.id}`)}
+                      >
+                        View
+                      </Button>
+                    </div>
+                  ))}
+                  <Button 
+                    variant="outline" 
+                    className="w-full" 
+                    onClick={() => navigate('/dashboard/tasks')}
+                  >
+                    View All Tasks
+                  </Button>
                 </div>
               </CardContent>
             </Card>
           </TabsContent>
         </Tabs>
       </div>
-      
-      {/* Story Creation/Edit Dialog */}
-      <StoryDetailDialog 
-        isOpen={isStoryDialogOpen}
-        onClose={() => setIsStoryDialogOpen(false)}
-        onSave={handleSaveStory}
-        story={selectedStory}
-      />
     </DashboardLayout>
   );
 };
