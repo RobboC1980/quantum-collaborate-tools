@@ -19,23 +19,27 @@ const TaskManagement = () => {
     // Simulate loading data
     const timer = setTimeout(() => {
       setIsLoading(false);
+      console.log("TaskManagement: Data loaded");
     }, 300);
     
     return () => clearTimeout(timer);
   }, []);
   
   const handleCreateTask = () => {
+    console.log("Creating new task");
     setSelectedTask(null);
     setIsTaskDialogOpen(true);
   };
   
   const handleEditTask = (task: TaskWithRelations) => {
-    console.log('Edit task:', task);
+    console.log('Editing task:', task);
     setSelectedTask(task);
     setIsTaskDialogOpen(true);
   };
   
   const handleSaveTask = (task: TaskWithRelations) => {
+    console.log('Saving task:', task);
+    
     setTasks(prevTasks => {
       // Check if task already exists (update case)
       const existingIndex = prevTasks.findIndex(t => t.id === task.id);
@@ -43,7 +47,10 @@ const TaskManagement = () => {
       if (existingIndex >= 0) {
         // Update existing task
         const updatedTasks = [...prevTasks];
-        updatedTasks[existingIndex] = task;
+        updatedTasks[existingIndex] = {
+          ...task,
+          updatedAt: new Date()
+        };
         
         toast({
           title: "Task Updated",
@@ -74,6 +81,8 @@ const TaskManagement = () => {
   };
   
   const handleMoveTask = (taskId: string, newStatus: TaskStatus) => {
+    console.log(`Moving task ${taskId} to ${newStatus}`);
+    
     setTasks(prevTasks => {
       return prevTasks.map(task => {
         if (task.id === taskId) {
@@ -93,6 +102,8 @@ const TaskManagement = () => {
   };
   
   const handleDeleteTask = (task: TaskWithRelations) => {
+    console.log('Deleting task:', task);
+    
     setTasks(prevTasks => prevTasks.filter(t => t.id !== task.id));
     
     toast({
@@ -106,7 +117,7 @@ const TaskManagement = () => {
     return (
       <DashboardLayout>
         <div className="flex items-center justify-center h-[80vh]">
-          <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-quantum-600"></div>
+          <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-primary"></div>
         </div>
       </DashboardLayout>
     );

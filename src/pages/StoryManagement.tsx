@@ -35,6 +35,7 @@ const StoryManagement = () => {
     // Simulate loading data
     const timer = setTimeout(() => {
       setIsLoading(false);
+      console.log("StoryManagement: Data loaded");
     }, 300);
     
     console.log("Story Management Page:", { user: !!user, profile });
@@ -49,6 +50,7 @@ const StoryManagement = () => {
   
   // Create a new story
   const handleCreateStory = () => {
+    console.log("Creating new story");
     setSelectedStory(null);
     setIsStoryDialogOpen(true);
   };
@@ -62,6 +64,7 @@ const StoryManagement = () => {
   
   // Open the delete confirmation dialog
   const handleDeleteClick = (story: StoryWithRelations) => {
+    console.log("Delete story called with:", story);
     setSelectedStory(story);
     setIsDeleteDialogOpen(true);
   };
@@ -114,6 +117,8 @@ const StoryManagement = () => {
   const handleDeleteStory = () => {
     if (!selectedStory) return;
     
+    console.log("Deleting story:", selectedStory);
+    
     setStories(prevStories => prevStories.filter(story => story.id !== selectedStory.id));
     
     toast({
@@ -130,7 +135,7 @@ const StoryManagement = () => {
     return (
       <DashboardLayout>
         <div className="flex items-center justify-center h-[80vh]">
-          <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-quantum-600"></div>
+          <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-primary"></div>
         </div>
       </DashboardLayout>
     );
