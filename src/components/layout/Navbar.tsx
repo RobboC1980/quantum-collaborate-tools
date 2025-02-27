@@ -47,12 +47,16 @@ const Navbar = () => {
 
         {/* CTA Buttons */}
         <div className="hidden md:flex items-center space-x-4">
-          <Button variant="outline" size="sm">
-            Sign In
-          </Button>
-          <Button variant="quantum" size="sm" withArrow>
-            Get Started
-          </Button>
+          <Link to="/auth">
+            <Button variant="outline" size="sm">
+              Sign In
+            </Button>
+          </Link>
+          <Link to="/auth">
+            <Button variant="quantum" size="sm" withArrow>
+              Get Started
+            </Button>
+          </Link>
         </div>
 
         {/* Mobile Menu Button */}
@@ -102,12 +106,16 @@ const Navbar = () => {
               Roadmap
             </Link>
             <div className="flex flex-col space-y-3 pt-3 border-t">
-              <Button variant="outline" className="w-full justify-center">
-                Sign In
-              </Button>
-              <Button variant="quantum" className="w-full justify-center" withArrow>
-                Get Started
-              </Button>
+              <Link to="/auth">
+                <Button variant="outline" className="w-full justify-center">
+                  Sign In
+                </Button>
+              </Link>
+              <Link to="/auth">
+                <Button variant="quantum" className="w-full justify-center" withArrow>
+                  Get Started
+                </Button>
+              </Link>
             </div>
           </div>
         </div>

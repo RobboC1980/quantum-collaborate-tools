@@ -1,5 +1,6 @@
 
 import React, { useEffect, useRef } from 'react';
+import { Link } from 'react-router-dom';
 import Button from '../ui/Button';
 
 const Hero = () => {
@@ -61,14 +62,16 @@ const Hero = () => {
           </p>
           
           <div className="flex flex-col sm:flex-row gap-4 animate-fade-in" style={{ animationDelay: '0.8s' }}>
-            <Button 
-              variant="quantum" 
-              size="lg" 
-              withArrow
-              className="text-lg py-6 px-8"
-            >
-              Start Free Trial
-            </Button>
+            <Link to="/auth">
+              <Button 
+                variant="quantum" 
+                size="lg" 
+                withArrow
+                className="text-lg py-6 px-8"
+              >
+                Start Free Trial
+              </Button>
+            </Link>
             <Button 
               variant="outline" 
               size="lg"

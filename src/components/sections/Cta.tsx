@@ -1,5 +1,6 @@
 
 import React from 'react';
+import { Link } from 'react-router-dom';
 import Button from '../ui/Button';
 
 const Cta = () => {
@@ -52,21 +53,25 @@ const Cta = () => {
                 </p>
               </div>
               <div className="flex flex-col sm:flex-row gap-4">
-                <Button 
-                  variant="quantum" 
-                  size="lg" 
-                  withArrow
-                  className="text-lg py-5 px-7"
-                >
-                  Start Free Trial
-                </Button>
-                <Button 
-                  variant="outline" 
-                  size="lg"
-                  className="text-lg py-5 px-7"
-                >
-                  Schedule Demo
-                </Button>
+                <Link to="/auth">
+                  <Button 
+                    variant="quantum" 
+                    size="lg" 
+                    withArrow
+                    className="text-lg py-5 px-7"
+                  >
+                    Start Free Trial
+                  </Button>
+                </Link>
+                <Link to="/auth">
+                  <Button 
+                    variant="outline" 
+                    size="lg"
+                    className="text-lg py-5 px-7"
+                  >
+                    Schedule Demo
+                  </Button>
+                </Link>
               </div>
             </div>
           </div>
