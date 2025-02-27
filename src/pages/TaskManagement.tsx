@@ -46,7 +46,8 @@ const TaskManagement = () => {
         
         <TaskBoard 
           tasks={mockTasks}
-          onTaskClick={handleEditTask}
+          onSelectTask={handleEditTask}
+          onCreateTask={handleCreateTask}
         />
         
         <TaskDetailDialog
