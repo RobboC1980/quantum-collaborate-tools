@@ -1,5 +1,6 @@
 
-import React from 'react';
+import React, { useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import DashboardLayout from '@/components/layout/DashboardLayout';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
@@ -9,10 +10,15 @@ import {
   CalendarDays, 
   CheckCircle, 
   Clock, 
-  Activity
+  Activity,
+  PlusCircle,
+  ListTodo
 } from 'lucide-react';
+import { Button } from '@/components/ui/button';
+import SprintSummaryCard from '@/components/sprint/SprintSummaryCard';
 
 const Dashboard = () => {
+  const navigate = useNavigate();
   // Mock data for dashboard
   const projectStats = {
     activeProjects: 12,
@@ -21,17 +27,38 @@ const Dashboard = () => {
     teamMembers: 16
   };
 
-  const sprintStats = {
-    name: 'Sprint 23',
-    progress: 68,
-    daysLeft: 5,
-    totalStories: 24,
-    completedStories: 16,
-    storyPoints: {
-      total: 120,
-      completed: 76
+  const mockSprints = [
+    {
+      id: 1,
+      name: 'Sprint 23',
+      startDate: '2024-05-15',
+      endDate: '2024-05-28',
+      status: 'active',
+      progress: 68,
+      totalStories: 24,
+      completedStories: 16,
+    },
+    {
+      id: 2,
+      name: 'Sprint 24',
+      startDate: '2024-05-29',
+      endDate: '2024-06-11',
+      status: 'planned',
+      progress: 0,
+      totalStories: 18,
+      completedStories: 0,
+    },
+    {
+      id: 3,
+      name: 'Sprint 22',
+      startDate: '2024-05-01',
+      endDate: '2024-05-14',
+      status: 'completed',
+      progress: 100,
+      totalStories: 20,
+      completedStories: 20,
     }
-  };
+  ];
 
   // Mock data for upcoming deadlines
   const upcomingDeadlines = [
@@ -48,6 +75,13 @@ const Dashboard = () => {
     { id: 4, user: 'Diana Ross', action: 'commented on', item: 'API integration story', time: '6 hours ago' },
     { id: 5, user: 'Edward Norton', action: 'moved', item: 'Dashboard widgets to In Review', time: '8 hours ago' },
   ];
+
+  // Get the current active sprint
+  const activeSprint = mockSprints.find(sprint => sprint.status === 'active');
+
+  const navigateToSprint = (sprintId: number) => {
+    navigate(`/dashboard/sprints?id=${sprintId}`);
+  };
 
   return (
     <DashboardLayout>
@@ -145,68 +179,38 @@ const Dashboard = () => {
             <TabsTrigger value="team">Team</TabsTrigger>
           </TabsList>
           
-          <TabsContent value="overview" className="space-y-4">
-            <div className="grid gap-4 grid-cols-1 md:grid-cols-2 lg:grid-cols-3">
-              {/* Current Sprint Card */}
-              <Card className="col-span-1 md:col-span-2">
-                <CardHeader>
-                  <CardTitle>Current Sprint: {sprintStats.name}</CardTitle>
-                  <CardDescription>
-                    {sprintStats.daysLeft} days remaining
-                  </CardDescription>
-                </CardHeader>
-                <CardContent>
-                  <div className="space-y-4">
-                    {/* Sprint Progress */}
-                    <div>
-                      <div className="flex items-center justify-between mb-2">
-                        <span className="text-sm font-medium">Progress</span>
-                        <span className="text-sm font-medium">{sprintStats.progress}%</span>
-                      </div>
-                      <div className="h-2 bg-muted rounded-full overflow-hidden">
-                        <div 
-                          className="h-full bg-quantum-600 rounded-full transition-all duration-500"
-                          style={{ width: `${sprintStats.progress}%` }}
-                        ></div>
-                      </div>
-                    </div>
-                    
-                    {/* Sprint Stats */}
-                    <div className="grid grid-cols-2 gap-4">
-                      <div className="space-y-2">
-                        <div className="flex items-center justify-between">
-                          <span className="text-sm text-muted-foreground">Stories</span>
-                          <span className="text-sm font-medium">{sprintStats.completedStories}/{sprintStats.totalStories}</span>
-                        </div>
-                        <div className="h-1.5 bg-muted rounded-full overflow-hidden">
-                          <div 
-                            className="h-full bg-quantum-400 rounded-full transition-all duration-500"
-                            style={{ width: `${(sprintStats.completedStories / sprintStats.totalStories) * 100}%` }}
-                          ></div>
-                        </div>
-                      </div>
-                      
-                      <div className="space-y-2">
-                        <div className="flex items-center justify-between">
-                          <span className="text-sm text-muted-foreground">Story Points</span>
-                          <span className="text-sm font-medium">{sprintStats.storyPoints.completed}/{sprintStats.storyPoints.total}</span>
-                        </div>
-                        <div className="h-1.5 bg-muted rounded-full overflow-hidden">
-                          <div 
-                            className="h-full bg-quantum-400 rounded-full transition-all duration-500"
-                            style={{ width: `${(sprintStats.storyPoints.completed / sprintStats.storyPoints.total) * 100}%` }}
-                          ></div>
-                        </div>
-                      </div>
-                    </div>
-                  </div>
-                </CardContent>
-              </Card>
+          <TabsContent value="overview" className="space-y-6">
+            {/* Sprints Section */}
+            <div>
+              <div className="flex items-center justify-between mb-4">
+                <h2 className="text-lg font-medium">Sprints</h2>
+                <Button variant="outline" size="sm" className="h-8 gap-1">
+                  <PlusCircle size={14} />
+                  New Sprint
+                </Button>
+              </div>
               
+              <div className="grid gap-4 grid-cols-1 md:grid-cols-2 lg:grid-cols-3">
+                {mockSprints.map(sprint => (
+                  <SprintSummaryCard 
+                    key={sprint.id} 
+                    sprint={sprint} 
+                    onClick={() => navigateToSprint(sprint.id)}
+                  />
+                ))}
+              </div>
+            </div>
+            
+            <div className="grid gap-4 grid-cols-1 md:grid-cols-2">
               {/* Upcoming Deadlines Card */}
               <Card>
-                <CardHeader>
-                  <CardTitle>Upcoming Deadlines</CardTitle>
+                <CardHeader className="pb-3">
+                  <div className="flex items-center justify-between">
+                    <CardTitle className="text-lg">Upcoming Deadlines</CardTitle>
+                    <Button variant="ghost" size="sm" className="h-8 px-2 text-muted-foreground">
+                      View All
+                    </Button>
+                  </div>
                   <CardDescription>
                     Stay on track with important dates
                   </CardDescription>
@@ -231,14 +235,63 @@ const Dashboard = () => {
                   </div>
                 </CardContent>
               </Card>
+              
+              {/* My Stories Card */}
+              <Card>
+                <CardHeader className="pb-3">
+                  <div className="flex items-center justify-between">
+                    <CardTitle className="text-lg">My Stories</CardTitle>
+                    <Button variant="ghost" size="sm" className="h-8 px-2 text-muted-foreground">
+                      View All
+                    </Button>
+                  </div>
+                  <CardDescription>
+                    Stories assigned to you in the current sprint
+                  </CardDescription>
+                </CardHeader>
+                <CardContent>
+                  <div className="space-y-3">
+                    {[...Array(3)].map((_, i) => (
+                      <div key={i} className="flex items-center justify-between p-2 border rounded-md">
+                        <div className="flex items-center gap-3">
+                          <div className="flex h-8 w-8 items-center justify-center rounded bg-blue-100 text-blue-700">
+                            <ListTodo size={14} />
+                          </div>
+                          <div>
+                            <p className="text-sm font-medium">
+                              Implement user dashboard widgets
+                            </p>
+                            <div className="flex items-center gap-2">
+                              <Badge variant="outline" className="text-xs px-1 py-0">
+                                5 pts
+                              </Badge>
+                              <span className="text-xs text-muted-foreground">
+                                In progress
+                              </span>
+                            </div>
+                          </div>
+                        </div>
+                        <Button variant="ghost" size="sm" className="h-7 w-7 p-0">
+                          <ArrowRight size={14} />
+                        </Button>
+                      </div>
+                    ))}
+                  </div>
+                </CardContent>
+              </Card>
             </div>
             
             {/* Recent Activity Card */}
             <Card>
-              <CardHeader>
-                <CardTitle>Recent Activity</CardTitle>
+              <CardHeader className="pb-3">
+                <div className="flex items-center justify-between">
+                  <CardTitle className="text-lg">Recent Activity</CardTitle>
+                  <Button variant="ghost" size="sm" className="h-8 px-2 text-muted-foreground">
+                    View All
+                  </Button>
+                </div>
                 <CardDescription>
-                  Latest team updates and changes
+                  Latest updates and changes in your team
                 </CardDescription>
               </CardHeader>
               <CardContent>

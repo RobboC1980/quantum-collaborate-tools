@@ -1,339 +1,199 @@
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
+import { useSearchParams } from 'react-router-dom';
 import DashboardLayout from '@/components/layout/DashboardLayout';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
-import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
-import { Textarea } from '@/components/ui/textarea';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Calendar } from '@/components/ui/calendar';
-import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
-import { format } from 'date-fns';
-import { CalendarIcon, Plus, ChevronRight, Clock, Calendar as CalendarIcon2, CheckCircle, AlertCircle, ArrowRight } from 'lucide-react';
-import { toast } from 'sonner';
+import { PlusCircle, Calendar, ListTodo, BarChart2 } from 'lucide-react';
 import SprintBoard from '@/components/sprint/SprintBoard';
 import SprintCalendar from '@/components/sprint/SprintCalendar';
 import ActiveSprintCard from '@/components/sprint/ActiveSprintCard';
 
-// Mock data for sprints
-const initialSprints = [
-  {
-    id: 1,
-    name: 'Sprint 23',
-    startDate: new Date(2024, 4, 15),
-    endDate: new Date(2024, 4, 28),
-    goal: 'Complete user authentication and profile management features',
-    status: 'active',
-    team: 'Core Team',
-    progress: 68,
-    totalStories: 24,
-    completedStories: 16,
-    storyPoints: {
-      total: 120,
-      completed: 76
-    }
-  },
-  {
-    id: 2,
-    name: 'Sprint 22',
-    startDate: new Date(2024, 4, 1),
-    endDate: new Date(2024, 4, 14),
-    goal: 'Implement dashboard analytics and reporting',
-    status: 'completed',
-    team: 'Core Team',
-    progress: 100,
-    totalStories: 18,
-    completedStories: 18,
-    storyPoints: {
-      total: 92,
-      completed: 92
-    }
-  },
-  {
-    id: 3,
-    name: 'Sprint 21',
-    startDate: new Date(2024, 3, 17),
-    endDate: new Date(2024, 3, 30),
-    goal: 'Project settings and user permissions',
-    status: 'completed',
-    team: 'Core Team',
-    progress: 100,
-    totalStories: 20,
-    completedStories: 18,
-    storyPoints: {
-      total: 104,
-      completed: 96
-    }
-  }
-];
-
 const SprintManagement = () => {
-  const [sprints, setSprints] = useState(initialSprints);
-  const [open, setOpen] = useState(false);
-  const [newSprint, setNewSprint] = useState({
-    name: '',
-    startDate: new Date(),
-    endDate: new Date(new Date().getTime() + 14 * 24 * 60 * 60 * 1000), // Default to 2 weeks
-    goal: '',
-    team: 'Core Team'
-  });
-
-  // Get active sprint
-  const activeSprint = sprints.find(sprint => sprint.status === 'active');
+  const [searchParams] = useSearchParams();
+  const sprintId = searchParams.get('id');
+  const [activeTab, setActiveTab] = useState('board');
   
-  // Get upcoming sprints
-  const upcomingSprints = sprints
-    .filter(sprint => new Date(sprint.startDate) > new Date() && sprint.status !== 'active')
-    .sort((a, b) => new Date(a.startDate).getTime() - new Date(b.startDate).getTime());
-  
-  // Get completed sprints
-  const completedSprints = sprints
-    .filter(sprint => sprint.status === 'completed')
-    .sort((a, b) => new Date(b.endDate).getTime() - new Date(a.endDate).getTime());
-
-  const handleCreateSprint = () => {
-    // Validate inputs
-    if (!newSprint.name || !newSprint.goal || !newSprint.team) {
-      toast.error('Please fill in all required fields');
-      return;
-    }
-
-    // Create new sprint
-    const newSprintObj = {
-      id: sprints.length + 1,
-      ...newSprint,
-      status: 'upcoming',
+  // Mock sprint data
+  const mockSprints = [
+    {
+      id: 1,
+      name: 'Sprint 23',
+      startDate: new Date('2024-05-15'),
+      endDate: new Date('2024-05-28'),
+      goal: 'Complete user authentication and dashboard widgets',
+      status: 'active',
+      team: 'Team Alpha',
+      progress: 68,
+      totalStories: 24,
+      completedStories: 16,
+      storyPoints: {
+        total: 120,
+        completed: 76
+      }
+    },
+    {
+      id: 2,
+      name: 'Sprint 24',
+      startDate: new Date('2024-05-29'),
+      endDate: new Date('2024-06-11'),
+      goal: 'Implement API integration and data visualization',
+      status: 'planned',
+      team: 'Team Beta',
       progress: 0,
-      totalStories: 0,
+      totalStories: 18,
       completedStories: 0,
       storyPoints: {
-        total: 0,
+        total: 98,
         completed: 0
       }
-    };
-
-    setSprints([...sprints, newSprintObj]);
-    setOpen(false);
-    toast.success('Sprint created successfully');
+    },
+    {
+      id: 3,
+      name: 'Sprint 22',
+      startDate: new Date('2024-05-01'),
+      endDate: new Date('2024-05-14'),
+      goal: 'Setup project infrastructure and core components',
+      status: 'completed',
+      team: 'Team Alpha',
+      progress: 100,
+      totalStories: 20,
+      completedStories: 20,
+      storyPoints: {
+        total: 110,
+        completed: 110
+      }
+    }
+  ];
+  
+  // Find the selected sprint (defaults to the active sprint if none selected)
+  const [selectedSprint, setSelectedSprint] = useState<any>(null);
+  
+  useEffect(() => {
+    if (sprintId) {
+      const sprint = mockSprints.find(s => s.id === Number(sprintId));
+      if (sprint) {
+        setSelectedSprint(sprint);
+        return;
+      }
+    }
     
-    // Reset form
-    setNewSprint({
-      name: '',
-      startDate: new Date(),
-      endDate: new Date(new Date().getTime() + 14 * 24 * 60 * 60 * 1000),
-      goal: '',
-      team: 'Core Team'
-    });
-  };
+    // Default to active sprint if no ID is specified or not found
+    const activeSprint = mockSprints.find(s => s.status === 'active');
+    setSelectedSprint(activeSprint || mockSprints[0]);
+  }, [sprintId]);
+  
+  if (!selectedSprint) {
+    return (
+      <DashboardLayout>
+        <div className="h-full flex items-center justify-center">
+          <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-quantum-600"></div>
+        </div>
+      </DashboardLayout>
+    );
+  }
 
   return (
     <DashboardLayout>
-      <div className="flex flex-col gap-6">
+      <div className="space-y-6">
         <div className="flex items-center justify-between">
           <h1 className="text-2xl font-bold tracking-tight">Sprint Management</h1>
-          <Dialog open={open} onOpenChange={setOpen}>
-            <DialogTrigger asChild>
-              <Button className="gap-2">
-                <Plus size={16} />
-                New Sprint
-              </Button>
-            </DialogTrigger>
-            <DialogContent className="sm:max-w-[500px]">
-              <DialogHeader>
-                <DialogTitle>Create New Sprint</DialogTitle>
-                <DialogDescription>
-                  Set up a new sprint for your team to work on
-                </DialogDescription>
-              </DialogHeader>
-              <div className="grid gap-4 py-4">
-                <div className="grid gap-2">
-                  <Label htmlFor="name">Sprint Name</Label>
-                  <Input 
-                    id="name" 
-                    placeholder="e.g. Sprint 24" 
-                    value={newSprint.name}
-                    onChange={(e) => setNewSprint({...newSprint, name: e.target.value})}
-                  />
-                </div>
-                <div className="grid grid-cols-2 gap-4">
-                  <div className="grid gap-2">
-                    <Label>Start Date</Label>
-                    <Popover>
-                      <PopoverTrigger asChild>
-                        <Button
-                          variant={"outline"}
-                          className="w-full justify-start text-left font-normal"
-                        >
-                          <CalendarIcon className="mr-2 h-4 w-4" />
-                          {newSprint.startDate ? format(newSprint.startDate, "PPP") : "Select date"}
-                        </Button>
-                      </PopoverTrigger>
-                      <PopoverContent className="w-auto p-0">
-                        <Calendar
-                          mode="single"
-                          selected={newSprint.startDate}
-                          onSelect={(date) => date && setNewSprint({...newSprint, startDate: date})}
-                          initialFocus
-                        />
-                      </PopoverContent>
-                    </Popover>
-                  </div>
-                  <div className="grid gap-2">
-                    <Label>End Date</Label>
-                    <Popover>
-                      <PopoverTrigger asChild>
-                        <Button
-                          variant={"outline"}
-                          className="w-full justify-start text-left font-normal"
-                        >
-                          <CalendarIcon className="mr-2 h-4 w-4" />
-                          {newSprint.endDate ? format(newSprint.endDate, "PPP") : "Select date"}
-                        </Button>
-                      </PopoverTrigger>
-                      <PopoverContent className="w-auto p-0">
-                        <Calendar
-                          mode="single"
-                          selected={newSprint.endDate}
-                          onSelect={(date) => date && setNewSprint({...newSprint, endDate: date})}
-                          initialFocus
-                        />
-                      </PopoverContent>
-                    </Popover>
-                  </div>
-                </div>
-                <div className="grid gap-2">
-                  <Label htmlFor="team">Team</Label>
-                  <Select 
-                    value={newSprint.team} 
-                    onValueChange={(value) => setNewSprint({...newSprint, team: value})}
-                  >
-                    <SelectTrigger>
-                      <SelectValue placeholder="Select a team" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="Core Team">Core Team</SelectItem>
-                      <SelectItem value="Frontend Team">Frontend Team</SelectItem>
-                      <SelectItem value="Backend Team">Backend Team</SelectItem>
-                      <SelectItem value="Design Team">Design Team</SelectItem>
-                    </SelectContent>
-                  </Select>
-                </div>
-                <div className="grid gap-2">
-                  <Label htmlFor="goal">Sprint Goal</Label>
-                  <Textarea 
-                    id="goal" 
-                    placeholder="What do you want to achieve in this sprint?" 
-                    value={newSprint.goal}
-                    onChange={(e) => setNewSprint({...newSprint, goal: e.target.value})}
-                  />
-                </div>
-              </div>
-              <DialogFooter>
-                <Button type="submit" onClick={handleCreateSprint}>Create Sprint</Button>
-              </DialogFooter>
-            </DialogContent>
-          </Dialog>
+          <Button className="gap-1">
+            <PlusCircle size={16} />
+            Create Sprint
+          </Button>
         </div>
-
-        {/* Active Sprint */}
-        {activeSprint && (
-          <ActiveSprintCard sprint={activeSprint} />
-        )}
-
-        {/* Sprint Management Tabs */}
-        <Tabs defaultValue="board" className="space-y-4">
-          <TabsList className="h-10">
-            <TabsTrigger value="board" className="h-9">Board</TabsTrigger>
-            <TabsTrigger value="calendar" className="h-9">Calendar</TabsTrigger>
-            <TabsTrigger value="list" className="h-9">List</TabsTrigger>
-          </TabsList>
-          
-          <TabsContent value="board" className="space-y-4">
-            <SprintBoard sprint={activeSprint} />
-          </TabsContent>
-          
-          <TabsContent value="calendar" className="space-y-4">
-            <SprintCalendar sprints={sprints} />
-          </TabsContent>
-          
-          <TabsContent value="list" className="space-y-4">
-            {/* Upcoming Sprints */}
-            {upcomingSprints.length > 0 && (
-              <Card>
-                <CardHeader>
-                  <CardTitle>Upcoming Sprints</CardTitle>
-                  <CardDescription>
-                    Scheduled sprints that will start in the future
-                  </CardDescription>
-                </CardHeader>
-                <CardContent>
-                  <div className="space-y-4">
-                    {upcomingSprints.map((sprint) => (
-                      <div key={sprint.id} className="flex items-center justify-between border-b pb-4 last:border-b-0 last:pb-0">
-                        <div className="flex flex-col">
-                          <div className="flex items-center">
-                            <h3 className="font-semibold">{sprint.name}</h3>
-                            <span className="ml-2 px-2 py-0.5 text-xs rounded-full bg-blue-100 text-blue-800">
-                              Upcoming
-                            </span>
-                          </div>
-                          <div className="flex items-center text-sm text-muted-foreground mt-1">
-                            <CalendarIcon2 size={14} className="mr-1" /> 
-                            {format(new Date(sprint.startDate), "MMM d")} - {format(new Date(sprint.endDate), "MMM d, yyyy")}
-                          </div>
-                          <p className="text-sm mt-1 text-muted-foreground">{sprint.goal}</p>
-                        </div>
-                        <Button variant="ghost" size="sm">
-                          <ChevronRight size={16} />
-                        </Button>
-                      </div>
-                    ))}
-                  </div>
-                </CardContent>
-              </Card>
-            )}
+        
+        <ActiveSprintCard sprint={selectedSprint} />
+        
+        <Tabs value={activeTab} onValueChange={setActiveTab}>
+          <div className="flex justify-between items-center mb-4">
+            <TabsList>
+              <TabsTrigger value="board" className="flex items-center gap-1">
+                <ListTodo size={14} />
+                Board
+              </TabsTrigger>
+              <TabsTrigger value="calendar" className="flex items-center gap-1">
+                <Calendar size={14} />
+                Calendar
+              </TabsTrigger>
+              <TabsTrigger value="stats" className="flex items-center gap-1">
+                <BarChart2 size={14} />
+                Analytics
+              </TabsTrigger>
+            </TabsList>
             
-            {/* Completed Sprints */}
-            {completedSprints.length > 0 && (
+            <div className="flex gap-2">
+              <Button variant="outline" size="sm">
+                Export
+              </Button>
+              <Button variant="outline" size="sm">
+                Configure
+              </Button>
+            </div>
+          </div>
+          
+          <TabsContent value="board" className="mt-0">
+            <SprintBoard sprint={selectedSprint} />
+          </TabsContent>
+          
+          <TabsContent value="calendar" className="mt-0">
+            <SprintCalendar sprints={mockSprints} />
+          </TabsContent>
+          
+          <TabsContent value="stats" className="mt-0">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <Card>
                 <CardHeader>
-                  <CardTitle>Completed Sprints</CardTitle>
+                  <CardTitle>Burndown Chart</CardTitle>
                   <CardDescription>
-                    Review past sprints and their outcomes
+                    Track progress against the ideal burndown line
                   </CardDescription>
                 </CardHeader>
                 <CardContent>
-                  <div className="space-y-4">
-                    {completedSprints.map((sprint) => (
-                      <div key={sprint.id} className="flex items-center justify-between border-b pb-4 last:border-b-0 last:pb-0">
-                        <div className="flex flex-col">
-                          <div className="flex items-center">
-                            <h3 className="font-semibold">{sprint.name}</h3>
-                            <span className="ml-2 px-2 py-0.5 text-xs rounded-full bg-green-100 text-green-800">
-                              Completed
-                            </span>
-                          </div>
-                          <div className="flex items-center text-sm text-muted-foreground mt-1">
-                            <CalendarIcon2 size={14} className="mr-1" /> 
-                            {format(new Date(sprint.startDate), "MMM d")} - {format(new Date(sprint.endDate), "MMM d, yyyy")}
-                          </div>
-                          <div className="flex items-center text-sm mt-1 text-muted-foreground">
-                            <CheckCircle size={14} className="mr-1 text-green-600" /> 
-                            {sprint.completedStories}/{sprint.totalStories} stories completed
-                          </div>
-                        </div>
-                        <Button variant="ghost" size="sm">
-                          <ChevronRight size={16} />
-                        </Button>
-                      </div>
-                    ))}
+                  <div className="h-[300px] flex items-center justify-center border border-dashed rounded-md">
+                    <p className="text-muted-foreground">Burndown chart will be displayed here</p>
                   </div>
                 </CardContent>
               </Card>
-            )}
+              
+              <Card>
+                <CardHeader>
+                  <CardTitle>Velocity Chart</CardTitle>
+                  <CardDescription>
+                    Track team velocity across sprints
+                  </CardDescription>
+                </CardHeader>
+                <CardContent>
+                  <div className="h-[300px] flex items-center justify-center border border-dashed rounded-md">
+                    <p className="text-muted-foreground">Velocity chart will be displayed here</p>
+                  </div>
+                </CardContent>
+              </Card>
+              
+              <Card className="md:col-span-2">
+                <CardHeader>
+                  <CardTitle>Sprint Breakdown</CardTitle>
+                  <CardDescription>
+                    Breakdown of stories by status, type, and assignee
+                  </CardDescription>
+                </CardHeader>
+                <CardContent>
+                  <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                    <div className="h-[200px] flex items-center justify-center border border-dashed rounded-md">
+                      <p className="text-muted-foreground">Status distribution chart</p>
+                    </div>
+                    <div className="h-[200px] flex items-center justify-center border border-dashed rounded-md">
+                      <p className="text-muted-foreground">Story type distribution chart</p>
+                    </div>
+                    <div className="h-[200px] flex items-center justify-center border border-dashed rounded-md">
+                      <p className="text-muted-foreground">Assignee load chart</p>
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
+            </div>
           </TabsContent>
         </Tabs>
       </div>
