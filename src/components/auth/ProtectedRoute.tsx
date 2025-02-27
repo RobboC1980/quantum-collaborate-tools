@@ -13,12 +13,16 @@ const ProtectedRoute: React.FC<ProtectedRouteProps> = ({ children, adminOnly = f
 
   console.log("Protected Route:", { user: !!user, profile, isLoading, adminOnly });
 
+  // Show a loading indicator while authentication state is being determined
   if (isLoading) {
-    return <div className="h-screen w-full flex items-center justify-center">
-      <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-quantum-600"></div>
-    </div>;
+    return (
+      <div className="h-screen w-full flex items-center justify-center">
+        <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-quantum-600"></div>
+      </div>
+    );
   }
 
+  // If user is not authenticated, redirect to auth page
   if (!user) {
     console.log("No user, redirecting to /auth");
     return <Navigate to="/auth" replace />;
@@ -37,6 +41,7 @@ const ProtectedRoute: React.FC<ProtectedRouteProps> = ({ children, adminOnly = f
     }
   }
 
+  // If user is authenticated and passes admin check (if required), render the children
   return <>{children}</>;
 };
 

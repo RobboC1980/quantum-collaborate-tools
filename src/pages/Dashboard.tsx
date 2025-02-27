@@ -1,5 +1,5 @@
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import DashboardLayout from '@/components/layout/DashboardLayout';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
@@ -22,14 +22,23 @@ import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import SprintSummaryCard from '@/components/sprint/SprintSummaryCard';
 import StoryList from '@/components/story/StoryList';
-import StoryDetailDialog from '@/components/story/StoryDetailDialog';
 import { mockStories } from '@/types/story';
 import { mockTasks } from '@/types/task';
+import { useAuth } from '@/contexts/AuthContext';
 
 const Dashboard = () => {
   const navigate = useNavigate();
-  const [isStoryDialogOpen, setIsStoryDialogOpen] = useState(false);
-  const [selectedStory, setSelectedStory] = useState<any>(null);
+  const { user } = useAuth();
+  const [isLoading, setIsLoading] = useState(true);
+  
+  useEffect(() => {
+    // Simulate loading data
+    const timer = setTimeout(() => {
+      setIsLoading(false);
+    }, 300);
+    
+    return () => clearTimeout(timer);
+  }, []);
   
   // Mock data for dashboard
   const projectStats = {
@@ -106,6 +115,16 @@ const Dashboard = () => {
   const handleCreateTask = () => {
     navigate('/dashboard/tasks');
   };
+
+  if (isLoading) {
+    return (
+      <DashboardLayout>
+        <div className="flex items-center justify-center h-[80vh]">
+          <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-quantum-600"></div>
+        </div>
+      </DashboardLayout>
+    );
+  }
 
   return (
     <DashboardLayout>
@@ -415,7 +434,7 @@ const Dashboard = () => {
               </Button>
             </div>
             <StoryList 
-              stories={mockStories.filter(story => story.assigneeId === 'user-123')} // Filter to show only stories assigned to current user
+              stories={mockStories.filter(story => story.assigneeId === 'user-123')} 
               onCreateStory={handleCreateStory}
               onSelectStory={handleEditStory}
             />

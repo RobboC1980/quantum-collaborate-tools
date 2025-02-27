@@ -27,18 +27,6 @@ interface AuthContextProps {
 
 const AuthContext = createContext<AuthContextProps | undefined>(undefined);
 
-// Create a default implementation of AuthContextProps for when used outside a provider
-const defaultAuthContext: AuthContextProps = {
-  session: null,
-  user: null,
-  profile: null,
-  isLoading: false,
-  signIn: async () => ({ error: new Error('AuthProvider not initialized'), data: null }),
-  signUp: async () => ({ error: new Error('AuthProvider not initialized'), data: null }),
-  signOut: async () => { console.error('AuthProvider not initialized') },
-  updateProfile: async () => ({ error: new Error('AuthProvider not initialized'), data: null }),
-};
-
 export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const [session, setSession] = useState<Session | null>(null);
   const [user, setUser] = useState<User | null>(null);
@@ -46,32 +34,43 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const [isLoading, setIsLoading] = useState(true);
   const navigate = useNavigate();
 
+  // Set up auth state listener
   useEffect(() => {
     console.log("AuthProvider initializing");
+    
     // Get initial session
-    supabase.auth.getSession().then(({ data: { session } }) => {
-      console.log("Initial session:", session);
-      setSession(session);
-      setUser(session?.user ?? null);
-      if (session?.user) {
-        fetchProfile(session.user.id);
+    const initializeAuth = async () => {
+      try {
+        // Get the current session
+        const { data: { session } } = await supabase.auth.getSession();
+        console.log("Initial session:", !!session);
+        
+        setSession(session);
+        setUser(session?.user ?? null);
+        
+        if (session?.user) {
+          await fetchProfile(session.user.id);
+        }
+      } catch (error) {
+        console.error("Error initializing auth:", error);
+      } finally {
+        setIsLoading(false);
       }
-      setIsLoading(false);
-    });
+    };
+
+    initializeAuth();
 
     // Listen for auth changes
-    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
+    const { data: { subscription } } = supabase.auth.onAuthStateChange(async (_event, session) => {
       console.log("Auth state changed:", _event, session?.user?.id);
       setSession(session);
       setUser(session?.user ?? null);
       
       if (session?.user) {
-        fetchProfile(session.user.id);
+        await fetchProfile(session.user.id);
       } else {
         setProfile(null);
       }
-      
-      setIsLoading(false);
     });
 
     return () => {
@@ -86,7 +85,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         .from('profiles')
         .select('*')
         .eq('id', userId)
-        .single();
+        .maybeSingle();
 
       if (error) {
         console.error('Error fetching profile:', error);
@@ -113,7 +112,6 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       }
 
       toast.success('Successfully signed in!');
-      navigate('/dashboard');
       return { data, error: null };
     } catch (error) {
       console.error('Sign in error:', error);
@@ -201,13 +199,4 @@ export const useAuth = () => {
     throw new Error('useAuth must be used within an AuthProvider');
   }
   return context;
-};
-
-// Export a wrapped version of the provider that doesn't use useNavigate for testing or for when used outside of a router
-export const AuthProviderWithoutRouter: React.FC<{ children: React.ReactNode }> = ({ children }) => {
-  return (
-    <AuthContext.Provider value={defaultAuthContext}>
-      {children}
-    </AuthContext.Provider>
-  );
 };
