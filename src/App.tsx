@@ -1,6 +1,6 @@
 
 import React from 'react';
-import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
+import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { Toaster } from "@/components/ui/toaster";
 import { TooltipProvider } from "@/components/ui/tooltip";
@@ -17,12 +17,17 @@ import TaskManagement from './pages/TaskManagement';
 import AdminDashboard from './pages/AdminDashboard';
 import NotFound from './pages/NotFound';
 
-// Create a client
+// Create a client with more robust settings
 const queryClient = new QueryClient({
   defaultOptions: {
     queries: {
-      retry: false,
+      retry: 1,
+      retryDelay: 1000,
+      staleTime: 0, // Consider everything stale immediately to force refetch on navigation
+      cacheTime: 5 * 60 * 1000, // Cache for 5 minutes
       refetchOnWindowFocus: false,
+      refetchOnMount: true, // Refetch when component mounts
+      refetchOnReconnect: true,
     },
   },
 });

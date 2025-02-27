@@ -1,5 +1,5 @@
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import DashboardLayout from '@/components/layout/DashboardLayout';
 import { Button } from '@/components/ui/button';
 import { PlusCircle, Trash2 } from 'lucide-react';
@@ -23,6 +23,7 @@ import { useToast } from '@/components/ui/use-toast';
 import { useAuth } from '@/contexts/AuthContext';
 
 const StoryManagement = () => {
+  const mountedRef = useRef(true);
   const [isStoryDialogOpen, setIsStoryDialogOpen] = useState(false);
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
   const [selectedStory, setSelectedStory] = useState<StoryWithRelations | null>(null);
@@ -32,28 +33,39 @@ const StoryManagement = () => {
   const { user, profile } = useAuth();
   
   useEffect(() => {
+    // Set the mounted ref to true when the component mounts
+    mountedRef.current = true;
+    
     // Indicate loading is in progress
     setIsLoading(true);
+    console.log("StoryManagement: Starting data load");
     
     // Load the stories with a small delay to simulate fetching
     const timer = setTimeout(() => {
-      setStories(mockStories);
-      setIsLoading(false);
-      console.log("StoryManagement: Data loaded");
+      // Only update state if the component is still mounted
+      if (mountedRef.current) {
+        console.log("StoryManagement: Setting stories data");
+        setStories(mockStories);
+        setIsLoading(false);
+        console.log("StoryManagement: Data loaded");
+      }
     }, 300);
     
     console.log("Story Management Page:", { user: !!user, profile });
     
     // Cleanup function to prevent state updates after unmount
     return () => {
+      console.log("StoryManagement: Component unmounting, cleaning up");
+      mountedRef.current = false;
       clearTimeout(timer);
-      console.log("StoryManagement: Component unmounted");
     };
-  }, [user, profile]);
+  }, []); // Removed user and profile dependencies to prevent unnecessary rerenders
   
   useEffect(() => {
-    console.log("Dialog open state:", isStoryDialogOpen);
-    console.log("Selected story:", selectedStory);
+    if (mountedRef.current) {
+      console.log("Dialog open state:", isStoryDialogOpen);
+      console.log("Selected story:", selectedStory);
+    }
   }, [isStoryDialogOpen, selectedStory]);
   
   // Create a new story

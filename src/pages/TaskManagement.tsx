@@ -1,5 +1,5 @@
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import DashboardLayout from '@/components/layout/DashboardLayout';
 import { Button } from '@/components/ui/button';
 import { PlusCircle } from 'lucide-react';
@@ -9,6 +9,7 @@ import { mockTasks, TaskWithRelations, TaskStatus } from '@/types/task';
 import { useToast } from '@/components/ui/use-toast';
 
 const TaskManagement = () => {
+  const mountedRef = useRef(true);
   const [isTaskDialogOpen, setIsTaskDialogOpen] = useState(false);
   const [selectedTask, setSelectedTask] = useState<TaskWithRelations | null>(null);
   const [tasks, setTasks] = useState<TaskWithRelations[]>([]);
@@ -16,22 +17,31 @@ const TaskManagement = () => {
   const { toast } = useToast();
   
   useEffect(() => {
+    // Set the mounted ref to true when the component mounts
+    mountedRef.current = true;
+    
     // Indicate loading is in progress
     setIsLoading(true);
+    console.log("TaskManagement: Starting data load");
     
     // Load the tasks with a small delay to simulate fetching
     const timer = setTimeout(() => {
-      setTasks(mockTasks);
-      setIsLoading(false);
-      console.log("TaskManagement: Data loaded");
+      // Only update state if the component is still mounted
+      if (mountedRef.current) {
+        console.log("TaskManagement: Setting tasks data");
+        setTasks(mockTasks);
+        setIsLoading(false);
+        console.log("TaskManagement: Data loaded");
+      }
     }, 300);
     
     // Cleanup function to prevent state updates after unmount
     return () => {
+      console.log("TaskManagement: Component unmounting, cleaning up");
+      mountedRef.current = false;
       clearTimeout(timer);
-      console.log("TaskManagement: Component unmounted");
     };
-  }, []);
+  }, []); // Empty dependency array means this only runs once on mount
   
   const handleCreateTask = () => {
     console.log("Creating new task");

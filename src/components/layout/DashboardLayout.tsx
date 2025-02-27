@@ -1,6 +1,6 @@
 
 import React from 'react';
-import { useNavigate, useLocation } from 'react-router-dom';
+import { useNavigate, useLocation, Link } from 'react-router-dom';
 import Navbar from './Navbar';
 import Footer from './Footer';
 import { Button } from '@/components/ui/button';
@@ -43,18 +43,22 @@ const DashboardLayout: React.FC<DashboardLayoutProps> = ({ children }) => {
         <aside className="col-span-12 md:col-span-3 lg:col-span-2">
           <nav className="sticky top-24 space-y-2">
             {navItems.map((item) => (
-              <Button
-                key={item.path}
-                variant="ghost"
-                className={cn(
-                  "w-full justify-start gap-2", 
-                  location.pathname === item.path ? "bg-muted font-medium" : ""
-                )}
-                onClick={() => navigate(item.path)}
+              <Link 
+                key={item.path} 
+                to={item.path}
+                className="block w-full"
               >
-                {item.icon}
-                {item.label}
-              </Button>
+                <Button
+                  variant="ghost"
+                  className={cn(
+                    "w-full justify-start gap-2", 
+                    location.pathname === item.path ? "bg-muted font-medium" : ""
+                  )}
+                >
+                  {item.icon}
+                  {item.label}
+                </Button>
+              </Link>
             ))}
           </nav>
         </aside>
