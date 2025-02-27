@@ -1,11 +1,12 @@
 
 import React from 'react';
 import { cn } from '@/lib/utils';
-import { Button as ShadcnButton, type ButtonProps as ShadcnButtonProps } from '@/components/ui/button';
+import type { ButtonProps as ShadcnButtonProps } from '@/components/ui/button';
+import { Button as ShadcnButton } from '@/components/ui/button';
 
 interface ButtonProps extends React.ButtonHTMLAttributes<HTMLButtonElement> {
   variant?: 'default' | 'secondary' | 'outline' | 'ghost' | 'link' | 'quantum';
-  size?: 'default' | 'sm' | 'lg' | 'icon'; // Removed 'xl' as it's not supported in the base component
+  size?: 'default' | 'sm' | 'lg' | 'icon';
   children: React.ReactNode;
   icon?: React.ReactNode;
   withArrow?: boolean;
@@ -30,7 +31,7 @@ const Button = ({
       size={size}
       className={cn(
         'font-medium transition-all duration-300 ease-in-out',
-        size === 'lg' && 'text-lg py-6 px-8', // Apply larger text and padding for 'lg' size
+        size === 'lg' && 'text-lg py-6 px-8',
         variant === 'quantum' && 'bg-quantum-600 hover:bg-quantum-700 text-white shadow-lg hover:shadow-xl',
         className
       )}
