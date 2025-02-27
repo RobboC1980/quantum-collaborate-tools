@@ -27,14 +27,25 @@ const StoryManagement = () => {
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
   const [selectedStory, setSelectedStory] = useState<StoryWithRelations | null>(null);
   const [stories, setStories] = useState<StoryWithRelations[]>(mockStories);
+  const [isLoading, setIsLoading] = useState(true);
   const { toast } = useToast();
   const { user, profile } = useAuth();
   
   useEffect(() => {
+    // Simulate loading data
+    const timer = setTimeout(() => {
+      setIsLoading(false);
+    }, 300);
+    
     console.log("Story Management Page:", { user: !!user, profile });
+    
+    return () => clearTimeout(timer);
+  }, [user, profile]);
+  
+  useEffect(() => {
     console.log("Dialog open state:", isStoryDialogOpen);
     console.log("Selected story:", selectedStory);
-  }, [isStoryDialogOpen, selectedStory, user, profile]);
+  }, [isStoryDialogOpen, selectedStory]);
   
   // Create a new story
   const handleCreateStory = () => {
@@ -44,6 +55,7 @@ const StoryManagement = () => {
   
   // Open the edit dialog for a story
   const handleEditStory = (story: StoryWithRelations) => {
+    console.log("Edit story called with:", story);
     setSelectedStory(story);
     setIsStoryDialogOpen(true);
   };
@@ -56,6 +68,8 @@ const StoryManagement = () => {
   
   // Handle story save (both create and update)
   const handleSaveStory = (story: StoryWithRelations) => {
+    console.log("Saving story:", story);
+    
     setStories(prevStories => {
       // Check if the story already exists (update case)
       const existingIndex = prevStories.findIndex(s => s.id === story.id);
@@ -63,7 +77,10 @@ const StoryManagement = () => {
       if (existingIndex >= 0) {
         // Update existing story
         const updatedStories = [...prevStories];
-        updatedStories[existingIndex] = story;
+        updatedStories[existingIndex] = {
+          ...story,
+          updatedAt: new Date()
+        };
         
         toast({
           title: "Story updated",
@@ -72,13 +89,21 @@ const StoryManagement = () => {
         
         return updatedStories;
       } else {
-        // Create new story
+        // Create new story with generated ID
+        const newStory = {
+          ...story,
+          id: `QS-${Math.floor(Math.random() * 1000)}`,
+          createdAt: new Date(),
+          updatedAt: new Date(),
+          reporterId: user?.id || 'user-456', // Default to a mock user if no current user
+        };
+        
         toast({
           title: "Story created",
           description: `"${story.title}" has been created successfully.`,
         });
         
-        return [...prevStories, story];
+        return [...prevStories, newStory];
       }
     });
     
@@ -100,6 +125,16 @@ const StoryManagement = () => {
     setIsDeleteDialogOpen(false);
     setSelectedStory(null);
   };
+
+  if (isLoading) {
+    return (
+      <DashboardLayout>
+        <div className="flex items-center justify-center h-[80vh]">
+          <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-quantum-600"></div>
+        </div>
+      </DashboardLayout>
+    );
+  }
 
   return (
     <DashboardLayout>
