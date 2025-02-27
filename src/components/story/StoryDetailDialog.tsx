@@ -405,31 +405,18 @@ const StoryDetailDialog: React.FC<StoryDetailDialogProps> = ({
                     </SelectContent>
                   </Select>
                 </div>
-                
-                {!isNewStory && (
-                  <div className="space-y-2">
-                    <Label htmlFor="originalStory">Original Story</Label>
-                    <Select 
-                      value={formData.originalStoryId || ''} 
-                      onValueChange={(value) => handleChange('originalStoryId', value)}
-                    >
-                      <SelectTrigger>
-                        <SelectValue placeholder="Select original story" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="">None</SelectItem>
-                        <SelectItem value="QS-101">QS-101: Implement user auth flow</SelectItem>
-                        <SelectItem value="QS-102">QS-102: Dashboard widgets</SelectItem>
-                      </SelectContent>
-                    </Select>
-                  </div>
-                )}
               </div>
               
               <div className="space-y-4">
                 <div className="space-y-2">
                   <Label>Dependencies</Label>
-                  <Select>
+                  <Select onValueChange={(value) => {
+                    const newDeps = [...(formData.dependencies || [])];
+                    if (!newDeps.includes(value)) {
+                      newDeps.push(value);
+                      handleChange('dependencies', newDeps);
+                    }
+                  }}>
                     <SelectTrigger>
                       <SelectValue placeholder="Add dependency..." />
                     </SelectTrigger>
@@ -445,7 +432,16 @@ const StoryDetailDialog: React.FC<StoryDetailDialogProps> = ({
                       {(formData.dependencies || []).map((dep, index) => (
                         <div key={index} className="flex items-center justify-between p-2 border rounded-md">
                           <span>{dep}</span>
-                          <Button variant="ghost" size="sm">Remove</Button>
+                          <Button 
+                            variant="ghost" 
+                            size="sm"
+                            onClick={() => {
+                              const newDeps = (formData.dependencies || []).filter(d => d !== dep);
+                              handleChange('dependencies', newDeps);
+                            }}
+                          >
+                            Remove
+                          </Button>
                         </div>
                       ))}
                     </div>
@@ -455,20 +451,6 @@ const StoryDetailDialog: React.FC<StoryDetailDialogProps> = ({
                     </p>
                   )}
                 </div>
-                
-                {!isNewStory && (formData.childStoryIds || []).length > 0 && (
-                  <div className="space-y-2">
-                    <Label>Child Stories</Label>
-                    <div className="mt-1 space-y-2">
-                      {(formData.childStoryIds || []).map((childId, index) => (
-                        <div key={index} className="flex items-center justify-between p-2 border rounded-md">
-                          <span>{childId}</span>
-                          <Button variant="ghost" size="sm">View</Button>
-                        </div>
-                      ))}
-                    </div>
-                  </div>
-                )}
               </div>
             </div>
           </TabsContent>
