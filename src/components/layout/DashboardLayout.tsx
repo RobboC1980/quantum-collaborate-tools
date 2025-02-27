@@ -38,9 +38,10 @@ const DashboardLayout: React.FC<DashboardLayoutProps> = ({ children }) => {
   return (
     <div className="min-h-screen bg-background">
       <Navbar />
-      <div className="container grid grid-cols-12 gap-6 py-8">
+      {/* Add padding-top to account for the fixed navbar */}
+      <div className="container grid grid-cols-12 gap-6 py-8 pt-20 mt-4">
         <aside className="col-span-12 md:col-span-3 lg:col-span-2">
-          <nav className="sticky top-20 space-y-2">
+          <nav className="sticky top-24 space-y-2">
             {navItems.map((item) => (
               <Button
                 key={item.path}
