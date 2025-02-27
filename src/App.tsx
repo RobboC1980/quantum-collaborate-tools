@@ -1,5 +1,5 @@
 
-import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
+import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { Toaster } from "@/components/ui/toaster";
 import { TooltipProvider } from "@/components/ui/tooltip";
@@ -30,9 +30,9 @@ function App() {
   console.log("App rendering");
   return (
     <QueryClientProvider client={queryClient}>
-      <TooltipProvider>
-        <AuthProvider>
-          <Router>
+      <Router>
+        <TooltipProvider>
+          <AuthProvider>
             <Routes>
               {/* Public Routes */}
               <Route path="/" element={<Index />} />
@@ -48,10 +48,10 @@ function App() {
               {/* 404 Page */}
               <Route path="*" element={<NotFound />} />
             </Routes>
-          </Router>
-          <Toaster />
-        </AuthProvider>
-      </TooltipProvider>
+            <Toaster />
+          </AuthProvider>
+        </TooltipProvider>
+      </Router>
     </QueryClientProvider>
   );
 }

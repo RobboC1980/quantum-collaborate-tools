@@ -27,6 +27,18 @@ interface AuthContextProps {
 
 const AuthContext = createContext<AuthContextProps | undefined>(undefined);
 
+// Create a default implementation of AuthContextProps for when used outside a provider
+const defaultAuthContext: AuthContextProps = {
+  session: null,
+  user: null,
+  profile: null,
+  isLoading: false,
+  signIn: async () => ({ error: new Error('AuthProvider not initialized'), data: null }),
+  signUp: async () => ({ error: new Error('AuthProvider not initialized'), data: null }),
+  signOut: async () => { console.error('AuthProvider not initialized') },
+  updateProfile: async () => ({ error: new Error('AuthProvider not initialized'), data: null }),
+};
+
 export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const [session, setSession] = useState<Session | null>(null);
   const [user, setUser] = useState<User | null>(null);
@@ -35,8 +47,10 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const navigate = useNavigate();
 
   useEffect(() => {
+    console.log("AuthProvider initializing");
     // Get initial session
     supabase.auth.getSession().then(({ data: { session } }) => {
+      console.log("Initial session:", session);
       setSession(session);
       setUser(session?.user ?? null);
       if (session?.user) {
@@ -47,6 +61,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
     // Listen for auth changes
     const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
+      console.log("Auth state changed:", _event, session?.user?.id);
       setSession(session);
       setUser(session?.user ?? null);
       
@@ -66,6 +81,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
   const fetchProfile = async (userId: string) => {
     try {
+      console.log("Fetching profile for user:", userId);
       const { data, error } = await supabase
         .from('profiles')
         .select('*')
@@ -77,6 +93,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         return;
       }
 
+      console.log("Profile fetched:", data);
       setProfile(data);
     } catch (error) {
       console.error('Error fetching profile:', error);
@@ -184,4 +201,13 @@ export const useAuth = () => {
     throw new Error('useAuth must be used within an AuthProvider');
   }
   return context;
+};
+
+// Export a wrapped version of the provider that doesn't use useNavigate for testing or for when used outside of a router
+export const AuthProviderWithoutRouter: React.FC<{ children: React.ReactNode }> = ({ children }) => {
+  return (
+    <AuthContext.Provider value={defaultAuthContext}>
+      {children}
+    </AuthContext.Provider>
+  );
 };

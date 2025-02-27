@@ -11,6 +11,8 @@ interface ProtectedRouteProps {
 const ProtectedRoute: React.FC<ProtectedRouteProps> = ({ children, adminOnly = false }) => {
   const { user, profile, isLoading } = useAuth();
 
+  console.log("Protected Route:", { user: !!user, profile, isLoading, adminOnly });
+
   if (isLoading) {
     return <div className="h-screen w-full flex items-center justify-center">
       <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-quantum-600"></div>
@@ -18,6 +20,7 @@ const ProtectedRoute: React.FC<ProtectedRouteProps> = ({ children, adminOnly = f
   }
 
   if (!user) {
+    console.log("No user, redirecting to /auth");
     return <Navigate to="/auth" replace />;
   }
 
@@ -26,7 +29,10 @@ const ProtectedRoute: React.FC<ProtectedRouteProps> = ({ children, adminOnly = f
     // Check the user's role from the profile
     const isAdmin = profile?.role === 'admin';
     
+    console.log("Admin check:", { isAdmin, role: profile?.role });
+    
     if (!isAdmin) {
+      console.log("Not admin, redirecting to /dashboard");
       return <Navigate to="/dashboard" replace />;
     }
   }

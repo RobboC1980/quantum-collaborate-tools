@@ -2,7 +2,7 @@
 import React, { useState, useEffect } from 'react';
 import DashboardLayout from '@/components/layout/DashboardLayout';
 import { Button } from '@/components/ui/button';
-import { PlusCircle, Trash2, AlertTriangle } from 'lucide-react';
+import { PlusCircle, Trash2 } from 'lucide-react';
 import StoryList from '@/components/story/StoryList';
 import StoryDetailDialog from '@/components/story/StoryDetailDialog';
 import { 
@@ -20,6 +20,7 @@ import {
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
 import { useToast } from '@/components/ui/use-toast';
+import { useAuth } from '@/contexts/AuthContext';
 
 const StoryManagement = () => {
   const [isStoryDialogOpen, setIsStoryDialogOpen] = useState(false);
@@ -27,11 +28,13 @@ const StoryManagement = () => {
   const [selectedStory, setSelectedStory] = useState<StoryWithRelations | null>(null);
   const [stories, setStories] = useState<StoryWithRelations[]>(mockStories);
   const { toast } = useToast();
+  const { user, profile } = useAuth();
   
   useEffect(() => {
+    console.log("Story Management Page:", { user: !!user, profile });
     console.log("Dialog open state:", isStoryDialogOpen);
     console.log("Selected story:", selectedStory);
-  }, [isStoryDialogOpen, selectedStory]);
+  }, [isStoryDialogOpen, selectedStory, user, profile]);
   
   // Create a new story
   const handleCreateStory = () => {
@@ -130,8 +133,7 @@ const StoryManagement = () => {
             <AlertDialogHeader>
               <AlertDialogTitle>Are you sure?</AlertDialogTitle>
               <AlertDialogDescription>
-                This will permanently delete the story "
-                {selectedStory?.title}" and all associated tasks. This action cannot be undone.
+                This will permanently delete the story "{selectedStory?.title}" and all associated tasks. This action cannot be undone.
               </AlertDialogDescription>
             </AlertDialogHeader>
             <AlertDialogFooter>
