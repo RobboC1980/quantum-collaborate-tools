@@ -9,7 +9,7 @@ interface ProtectedRouteProps {
 }
 
 const ProtectedRoute: React.FC<ProtectedRouteProps> = ({ children, adminOnly = false }) => {
-  const { user, isLoading } = useAuth();
+  const { user, profile, isLoading } = useAuth();
 
   if (isLoading) {
     return <div className="h-screen w-full flex items-center justify-center">
@@ -23,9 +23,8 @@ const ProtectedRoute: React.FC<ProtectedRouteProps> = ({ children, adminOnly = f
 
   // If adminOnly is true, check if the user is an admin
   if (adminOnly) {
-    // This would typically check a role on the user object
-    // For now, we'll just check a hypothetical isAdmin property
-    const isAdmin = user.isAdmin || false;
+    // Check the user's role from the profile
+    const isAdmin = profile?.role === 'admin';
     
     if (!isAdmin) {
       return <Navigate to="/dashboard" replace />;
