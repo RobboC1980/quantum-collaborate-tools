@@ -18,9 +18,15 @@ import {
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import SprintSummaryCard from '@/components/sprint/SprintSummaryCard';
+import StoryList from '@/components/story/StoryList';
+import StoryDetailDialog from '@/components/story/StoryDetailDialog';
+import { mockStories } from '@/types/story';
 
 const Dashboard = () => {
   const navigate = useNavigate();
+  const [isStoryDialogOpen, setIsStoryDialogOpen] = useState(false);
+  const [selectedStory, setSelectedStory] = useState<any>(null);
+  
   // Mock data for dashboard
   const projectStats = {
     activeProjects: 12,
@@ -83,6 +89,23 @@ const Dashboard = () => {
 
   const navigateToSprint = (sprintId: number) => {
     navigate(`/dashboard/sprints?id=${sprintId}`);
+  };
+  
+  const handleCreateStory = () => {
+    setSelectedStory(null);
+    setIsStoryDialogOpen(true);
+  };
+  
+  const handleEditStory = (story: any) => {
+    setSelectedStory(story);
+    setIsStoryDialogOpen(true);
+  };
+  
+  const handleSaveStory = (story: any) => {
+    console.log('Story saved:', story);
+    // In a real app, we would save to the database
+    // For now, we'll just close the dialog
+    setIsStoryDialogOpen(false);
   };
 
   return (
@@ -176,9 +199,9 @@ const Dashboard = () => {
         <Tabs defaultValue="overview" className="space-y-4">
           <TabsList>
             <TabsTrigger value="overview">Overview</TabsTrigger>
+            <TabsTrigger value="stories">Stories</TabsTrigger>
             <TabsTrigger value="analytics">Analytics</TabsTrigger>
             <TabsTrigger value="tasks">My Tasks</TabsTrigger>
-            <TabsTrigger value="team">Team</TabsTrigger>
           </TabsList>
           
           <TabsContent value="overview" className="space-y-6">
@@ -243,7 +266,12 @@ const Dashboard = () => {
                 <CardHeader className="pb-3">
                   <div className="flex items-center justify-between">
                     <CardTitle className="text-lg">My Stories</CardTitle>
-                    <Button variant="ghost" size="sm" className="h-8 px-2 text-muted-foreground">
+                    <Button 
+                      variant="ghost" 
+                      size="sm" 
+                      className="h-8 px-2 text-muted-foreground"
+                      onClick={() => navigate('/dashboard/stories')}
+                    >
                       View All
                     </Button>
                   </div>
@@ -253,27 +281,32 @@ const Dashboard = () => {
                 </CardHeader>
                 <CardContent>
                   <div className="space-y-3">
-                    {[...Array(3)].map((_, i) => (
-                      <div key={i} className="flex items-center justify-between p-2 border rounded-md">
+                    {mockStories.slice(0, 3).map((story) => (
+                      <div key={story.id} className="flex items-center justify-between p-2 border rounded-md">
                         <div className="flex items-center gap-3">
                           <div className="flex h-8 w-8 items-center justify-center rounded bg-blue-100 text-blue-700">
                             <ListTodo size={14} />
                           </div>
                           <div>
-                            <p className="text-sm font-medium">
-                              Implement user dashboard widgets
+                            <p className="text-sm font-medium line-clamp-1">
+                              {story.title}
                             </p>
                             <div className="flex items-center gap-2">
                               <Badge variant="outline" className="text-xs px-1 py-0">
-                                5 pts
+                                {story.points} pts
                               </Badge>
-                              <span className="text-xs text-muted-foreground">
-                                In progress
+                              <span className="text-xs text-muted-foreground capitalize">
+                                {story.status.replace('-', ' ')}
                               </span>
                             </div>
                           </div>
                         </div>
-                        <Button variant="ghost" size="sm" className="h-7 w-7 p-0">
+                        <Button 
+                          variant="ghost" 
+                          size="sm" 
+                          className="h-7 w-7 p-0"
+                          onClick={() => handleEditStory(story)}
+                        >
                           <ArrowRight size={14} />
                         </Button>
                       </div>
@@ -318,6 +351,14 @@ const Dashboard = () => {
             </Card>
           </TabsContent>
           
+          <TabsContent value="stories">
+            <StoryList 
+              stories={mockStories}
+              onCreateStory={handleCreateStory}
+              onSelectStory={handleEditStory}
+            />
+          </TabsContent>
+          
           <TabsContent value="analytics">
             <Card>
               <CardHeader>
@@ -349,24 +390,16 @@ const Dashboard = () => {
               </CardContent>
             </Card>
           </TabsContent>
-          
-          <TabsContent value="team">
-            <Card>
-              <CardHeader>
-                <CardTitle>Team</CardTitle>
-                <CardDescription>
-                  View team members and their assignments
-                </CardDescription>
-              </CardHeader>
-              <CardContent>
-                <div className="h-[300px] flex items-center justify-center border border-dashed rounded-md">
-                  <p className="text-muted-foreground">Team management interface will be displayed here</p>
-                </div>
-              </CardContent>
-            </Card>
-          </TabsContent>
         </Tabs>
       </div>
+      
+      {/* Story Creation/Edit Dialog */}
+      <StoryDetailDialog 
+        isOpen={isStoryDialogOpen}
+        onClose={() => setIsStoryDialogOpen(false)}
+        onSave={handleSaveStory}
+        story={selectedStory}
+      />
     </DashboardLayout>
   );
 };

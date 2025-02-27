@@ -11,6 +11,7 @@ import Auth from "./pages/Auth";
 import Dashboard from "./pages/Dashboard";
 import AdminDashboard from "./pages/AdminDashboard";
 import SprintManagement from "./pages/SprintManagement";
+import StoryManagement from "./pages/StoryManagement";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -46,6 +47,14 @@ const App = () => (
               element={
                 <ProtectedRoute>
                   <SprintManagement />
+                </ProtectedRoute>
+              } 
+            />
+            <Route 
+              path="/dashboard/stories" 
+              element={
+                <ProtectedRoute>
+                  <StoryManagement />
                 </ProtectedRoute>
               } 
             />
