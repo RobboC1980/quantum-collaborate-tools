@@ -1,5 +1,5 @@
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
@@ -7,29 +7,38 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import CustomButton from '@/components/ui/CustomButton';
 import { toast } from 'sonner';
+import { useAuth } from '@/contexts/AuthContext';
+import { supabase } from '@/integrations/supabase/client';
 
 const Auth = () => {
   const navigate = useNavigate();
+  const { signIn, signUp, user } = useAuth();
   const [isLoading, setIsLoading] = useState(false);
+  const [activeTab, setActiveTab] = useState('signin');
   
   // Form state
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [name, setName] = useState('');
   
+  // Redirect if user is already logged in
+  useEffect(() => {
+    if (user) {
+      navigate('/dashboard');
+    }
+  }, [user, navigate]);
+
   const handleSignIn = async (e: React.FormEvent) => {
     e.preventDefault();
     setIsLoading(true);
     
     try {
-      // Simulate authentication
-      await new Promise(resolve => setTimeout(resolve, 1000));
+      const { error } = await signIn(email, password);
       
-      // For demo purposes, we'll just navigate to the dashboard
-      toast.success('Successfully signed in!');
-      navigate('/dashboard');
+      if (!error) {
+        navigate('/dashboard');
+      }
     } catch (error) {
-      toast.error('Authentication failed. Please try again.');
       console.error('Authentication error:', error);
     } finally {
       setIsLoading(false);
@@ -41,14 +50,39 @@ const Auth = () => {
     setIsLoading(true);
     
     try {
-      // Simulate registration
-      await new Promise(resolve => setTimeout(resolve, 1000));
+      const { error } = await signUp(email, password, { full_name: name });
       
-      toast.success('Account created successfully! Please sign in.');
-      // Switch to sign in tab
+      if (!error) {
+        setActiveTab('signin');
+        toast.success('Account created successfully! Please check your email for verification.');
+      }
     } catch (error) {
-      toast.error('Registration failed. Please try again.');
       console.error('Registration error:', error);
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const handleResetPassword = async () => {
+    if (!email) {
+      toast.error('Please enter your email address');
+      return;
+    }
+
+    try {
+      setIsLoading(true);
+      const { error } = await supabase.auth.resetPasswordForEmail(email, {
+        redirectTo: `${window.location.origin}/auth/reset-password`,
+      });
+
+      if (error) {
+        toast.error(error.message);
+      } else {
+        toast.success('Password reset instructions sent to your email');
+      }
+    } catch (error) {
+      console.error('Password reset error:', error);
+      toast.error('Failed to send password reset instructions');
     } finally {
       setIsLoading(false);
     }
@@ -70,7 +104,7 @@ const Auth = () => {
           <p className="text-muted-foreground mt-2">Intelligent project management for agile teams</p>
         </div>
         
-        <Tabs defaultValue="signin" className="w-full">
+        <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
           <TabsList className="grid w-full grid-cols-2">
             <TabsTrigger value="signin">Sign In</TabsTrigger>
             <TabsTrigger value="signup">Sign Up</TabsTrigger>
@@ -100,9 +134,13 @@ const Auth = () => {
                   <div className="space-y-2">
                     <div className="flex items-center justify-between">
                       <Label htmlFor="password">Password</Label>
-                      <a href="#" className="text-sm text-quantum-600 hover:text-quantum-700">
+                      <button 
+                        type="button" 
+                        className="text-sm text-quantum-600 hover:text-quantum-700"
+                        onClick={handleResetPassword}
+                      >
                         Forgot password?
-                      </a>
+                      </button>
                     </div>
                     <Input 
                       id="password" 

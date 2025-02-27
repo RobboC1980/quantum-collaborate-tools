@@ -1,9 +1,12 @@
 
 import React, { useState, useEffect } from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import CustomButton from '../ui/CustomButton';
+import { useAuth } from '@/contexts/AuthContext';
 
 const Navbar = () => {
+  const navigate = useNavigate();
+  const { user } = useAuth();
   const [isScrolled, setIsScrolled] = useState(false);
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
 
@@ -47,16 +50,26 @@ const Navbar = () => {
 
         {/* CTA Buttons */}
         <div className="hidden md:flex items-center space-x-4">
-          <Link to="/auth">
-            <CustomButton variant="outline" size="sm">
-              Sign In
-            </CustomButton>
-          </Link>
-          <Link to="/auth">
-            <CustomButton variant="quantum" size="sm" withArrow>
-              Get Started
-            </CustomButton>
-          </Link>
+          {user ? (
+            <Link to="/dashboard">
+              <CustomButton variant="quantum" size="sm">
+                Dashboard
+              </CustomButton>
+            </Link>
+          ) : (
+            <>
+              <Link to="/auth">
+                <CustomButton variant="outline" size="sm">
+                  Sign In
+                </CustomButton>
+              </Link>
+              <Link to="/auth">
+                <CustomButton variant="quantum" size="sm" withArrow>
+                  Get Started
+                </CustomButton>
+              </Link>
+            </>
+          )}
         </div>
 
         {/* Mobile Menu Button */}
@@ -106,16 +119,26 @@ const Navbar = () => {
               Roadmap
             </Link>
             <div className="flex flex-col space-y-3 pt-3 border-t">
-              <Link to="/auth">
-                <CustomButton variant="outline" className="w-full justify-center">
-                  Sign In
-                </CustomButton>
-              </Link>
-              <Link to="/auth">
-                <CustomButton variant="quantum" className="w-full justify-center" withArrow>
-                  Get Started
-                </CustomButton>
-              </Link>
+              {user ? (
+                <Link to="/dashboard">
+                  <CustomButton variant="quantum" className="w-full justify-center">
+                    Dashboard
+                  </CustomButton>
+                </Link>
+              ) : (
+                <>
+                  <Link to="/auth">
+                    <CustomButton variant="outline" className="w-full justify-center">
+                      Sign In
+                    </CustomButton>
+                  </Link>
+                  <Link to="/auth">
+                    <CustomButton variant="quantum" className="w-full justify-center" withArrow>
+                      Get Started
+                    </CustomButton>
+                  </Link>
+                </>
+              )}
             </div>
           </div>
         </div>

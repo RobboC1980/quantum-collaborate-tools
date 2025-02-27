@@ -26,7 +26,7 @@ import {
   DropdownMenuTrigger 
 } from '@/components/ui/dropdown-menu';
 import { Input } from '@/components/ui/input';
-import { toast } from 'sonner';
+import { useAuth } from '@/contexts/AuthContext';
 
 interface NavItemProps {
   icon: React.ReactNode;
@@ -60,20 +60,7 @@ const DashboardLayout: React.FC<DashboardLayoutProps> = ({ children }) => {
   const navigate = useNavigate();
   const location = useLocation();
   const [sidebarOpen, setSidebarOpen] = useState(false);
-
-  // Mock user data
-  const user = {
-    name: 'John Doe',
-    email: 'john.doe@example.com',
-    role: 'Product Manager',
-    avatar: ''
-  };
-
-  const handleLogout = () => {
-    // Simulate logout
-    toast.success('Successfully logged out');
-    navigate('/auth');
-  };
+  const { user, profile, signOut } = useAuth();
 
   // Navigation items
   const navItems = [
@@ -84,6 +71,10 @@ const DashboardLayout: React.FC<DashboardLayoutProps> = ({ children }) => {
     { icon: <BarChart2 size={18} />, label: 'Analytics', href: '/dashboard/analytics' },
     { icon: <Settings size={18} />, label: 'Settings', href: '/dashboard/settings' },
   ];
+
+  const handleLogout = async () => {
+    await signOut();
+  };
 
   return (
     <div className="min-h-screen flex flex-col">
@@ -151,9 +142,11 @@ const DashboardLayout: React.FC<DashboardLayoutProps> = ({ children }) => {
               <DropdownMenuTrigger asChild>
                 <Button variant="ghost" className="relative h-8 w-8 rounded-full">
                   <Avatar className="h-8 w-8">
-                    <AvatarImage src={user.avatar} alt={user.name} />
+                    <AvatarImage src={profile?.avatar_url || ''} alt={profile?.full_name || user?.email || ''} />
                     <AvatarFallback>
-                      {user.name.split(' ').map(n => n[0]).join('')}
+                      {profile?.full_name 
+                        ? profile.full_name.split(' ').map((n: string) => n[0]).join('').toUpperCase()
+                        : user?.email?.charAt(0).toUpperCase() || 'U'}
                     </AvatarFallback>
                   </Avatar>
                 </Button>
@@ -161,9 +154,9 @@ const DashboardLayout: React.FC<DashboardLayoutProps> = ({ children }) => {
               <DropdownMenuContent className="w-56" align="end" forceMount>
                 <DropdownMenuLabel className="font-normal">
                   <div className="flex flex-col space-y-1">
-                    <p className="text-sm font-medium leading-none">{user.name}</p>
+                    <p className="text-sm font-medium leading-none">{profile?.full_name || 'User'}</p>
                     <p className="text-xs leading-none text-muted-foreground">
-                      {user.email}
+                      {user?.email}
                     </p>
                   </div>
                 </DropdownMenuLabel>
@@ -216,14 +209,16 @@ const DashboardLayout: React.FC<DashboardLayoutProps> = ({ children }) => {
                 <div className="pt-4 border-t">
                   <div className="flex items-center gap-3 mb-4 px-3">
                     <Avatar className="h-8 w-8">
-                      <AvatarImage src={user.avatar} alt={user.name} />
+                      <AvatarImage src={profile?.avatar_url || ''} alt={profile?.full_name || user?.email || ''} />
                       <AvatarFallback>
-                        {user.name.split(' ').map(n => n[0]).join('')}
+                        {profile?.full_name 
+                          ? profile.full_name.split(' ').map((n: string) => n[0]).join('').toUpperCase()
+                          : user?.email?.charAt(0).toUpperCase() || 'U'}
                       </AvatarFallback>
                     </Avatar>
                     <div>
-                      <p className="text-sm font-medium">{user.name}</p>
-                      <p className="text-xs text-muted-foreground">{user.role}</p>
+                      <p className="text-sm font-medium">{profile?.full_name || 'User'}</p>
+                      <p className="text-xs text-muted-foreground">{profile?.role || 'Member'}</p>
                     </div>
                   </div>
                   <Button 
@@ -256,14 +251,16 @@ const DashboardLayout: React.FC<DashboardLayoutProps> = ({ children }) => {
           <div className="pt-4 border-t">
             <div className="flex items-center gap-3 mb-4 px-3">
               <Avatar className="h-8 w-8">
-                <AvatarImage src={user.avatar} alt={user.name} />
+                <AvatarImage src={profile?.avatar_url || ''} alt={profile?.full_name || user?.email || ''} />
                 <AvatarFallback>
-                  {user.name.split(' ').map(n => n[0]).join('')}
+                  {profile?.full_name 
+                    ? profile.full_name.split(' ').map((n: string) => n[0]).join('').toUpperCase()
+                    : user?.email?.charAt(0).toUpperCase() || 'U'}
                 </AvatarFallback>
               </Avatar>
               <div>
-                <p className="text-sm font-medium">{user.name}</p>
-                <p className="text-xs text-muted-foreground">{user.role}</p>
+                <p className="text-sm font-medium">{profile?.full_name || 'User'}</p>
+                <p className="text-xs text-muted-foreground">{profile?.role || 'Member'}</p>
               </div>
             </div>
             <Button 
