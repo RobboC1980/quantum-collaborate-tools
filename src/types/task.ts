@@ -2,7 +2,7 @@
 import { User } from './user';
 import { StoryWithRelations } from './story';
 
-export type TaskStatus = 'to-do' | 'in-progress' | 'review' | 'done';
+export type TaskStatus = 'backlog' | 'to-do' | 'in-progress' | 'review' | 'done';
 export type TaskPriority = 'low' | 'medium' | 'high' | 'critical';
 
 export interface Subtask {

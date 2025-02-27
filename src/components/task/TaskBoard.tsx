@@ -21,6 +21,7 @@ const TaskBoard: React.FC<TaskBoardProps> = ({
 }) => {
   // Define columns for the board
   const columns: { id: TaskStatus; name: string }[] = [
+    { id: 'backlog', name: 'Backlog' },
     { id: 'to-do', name: 'To Do' },
     { id: 'in-progress', name: 'In Progress' },
     { id: 'review', name: 'Review' },

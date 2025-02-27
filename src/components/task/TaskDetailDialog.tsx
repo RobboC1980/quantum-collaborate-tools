@@ -277,6 +277,7 @@ const TaskDetailDialog: React.FC<TaskDetailDialogProps> = ({
                       <SelectValue placeholder="Select status" />
                     </SelectTrigger>
                     <SelectContent>
+                      <SelectItem value="backlog">Backlog</SelectItem>
                       <SelectItem value="to-do">To Do</SelectItem>
                       <SelectItem value="in-progress">In Progress</SelectItem>
                       <SelectItem value="review">Review</SelectItem>
