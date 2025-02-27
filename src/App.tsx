@@ -27,7 +27,6 @@ const queryClient = new QueryClient({
 });
 
 function App() {
-  console.log("App rendering");
   return (
     <QueryClientProvider client={queryClient}>
       <Router>
@@ -44,6 +43,10 @@ function App() {
               <Route path="/dashboard/stories" element={<ProtectedRoute><StoryManagement /></ProtectedRoute>} />
               <Route path="/dashboard/tasks" element={<ProtectedRoute><TaskManagement /></ProtectedRoute>} />
               <Route path="/admin" element={<ProtectedRoute adminOnly><AdminDashboard /></ProtectedRoute>} />
+              <Route path="/dashboard/epics" element={<ProtectedRoute><NotFound /></ProtectedRoute>} />
+              <Route path="/dashboard/team" element={<ProtectedRoute><NotFound /></ProtectedRoute>} />
+              <Route path="/dashboard/reports" element={<ProtectedRoute><NotFound /></ProtectedRoute>} />
+              <Route path="/dashboard/settings" element={<ProtectedRoute><NotFound /></ProtectedRoute>} />
               
               {/* 404 Page */}
               <Route path="*" element={<NotFound />} />

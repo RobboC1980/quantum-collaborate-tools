@@ -43,11 +43,14 @@ const Auth = () => {
     try {
       const { error } = await signIn(email, password);
       
-      if (!error) {
+      if (error) {
+        toast.error(error.message);
+      } else {
         navigate('/dashboard');
       }
-    } catch (error) {
+    } catch (error: any) {
       console.error('Authentication error:', error);
+      toast.error(error?.message || 'Failed to sign in');
     } finally {
       setIsLoading(false);
     }
@@ -71,12 +74,15 @@ const Auth = () => {
     try {
       const { error } = await signUp(email, password, { full_name: name });
       
-      if (!error) {
+      if (error) {
+        toast.error(error.message);
+      } else {
         setActiveTab('signin');
         toast.success('Account created successfully! Please check your email for verification.');
       }
-    } catch (error) {
+    } catch (error: any) {
       console.error('Registration error:', error);
+      toast.error(error?.message || 'Failed to create account');
     } finally {
       setIsLoading(false);
     }
@@ -99,9 +105,9 @@ const Auth = () => {
       } else {
         toast.success('Password reset instructions sent to your email');
       }
-    } catch (error) {
+    } catch (error: any) {
       console.error('Password reset error:', error);
-      toast.error('Failed to send password reset instructions');
+      toast.error(error?.message || 'Failed to send password reset instructions');
     } finally {
       setIsLoading(false);
     }
