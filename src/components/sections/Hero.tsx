@@ -1,7 +1,7 @@
 
 import React, { useEffect, useRef } from 'react';
 import { Link } from 'react-router-dom';
-import Button from '../ui/Button';
+import CustomButton from '../ui/CustomButton';
 
 const Hero = () => {
   const heroRef = useRef<HTMLDivElement>(null);
@@ -63,22 +63,22 @@ const Hero = () => {
           
           <div className="flex flex-col sm:flex-row gap-4 animate-fade-in" style={{ animationDelay: '0.8s' }}>
             <Link to="/auth">
-              <Button 
+              <CustomButton 
                 variant="quantum" 
                 size="lg" 
                 withArrow
                 className="text-lg py-6 px-8"
               >
                 Start Free Trial
-              </Button>
+              </CustomButton>
             </Link>
-            <Button 
+            <CustomButton 
               variant="outline" 
               size="lg"
               className="text-lg py-6 px-8"
             >
               Watch Demo
-            </Button>
+            </CustomButton>
           </div>
           
           <div className="mt-16 w-full max-w-3xl animate-fade-in shadow-xl rounded-lg overflow-hidden" style={{ animationDelay: '1s' }}>

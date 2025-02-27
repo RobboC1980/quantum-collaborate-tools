@@ -1,7 +1,7 @@
 
 import React from 'react';
 import { Link } from 'react-router-dom';
-import Button from '../ui/Button';
+import CustomButton from '../ui/CustomButton';
 
 const Cta = () => {
   return (
@@ -54,23 +54,23 @@ const Cta = () => {
               </div>
               <div className="flex flex-col sm:flex-row gap-4">
                 <Link to="/auth">
-                  <Button 
+                  <CustomButton 
                     variant="quantum" 
                     size="lg" 
                     withArrow
                     className="text-lg py-5 px-7"
                   >
                     Start Free Trial
-                  </Button>
+                  </CustomButton>
                 </Link>
                 <Link to="/auth">
-                  <Button 
+                  <CustomButton 
                     variant="outline" 
                     size="lg"
                     className="text-lg py-5 px-7"
                   >
                     Schedule Demo
-                  </Button>
+                  </CustomButton>
                 </Link>
               </div>
             </div>

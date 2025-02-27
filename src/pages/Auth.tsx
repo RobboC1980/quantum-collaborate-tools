@@ -5,7 +5,7 @@ import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle }
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import Button from '@/components/ui/Button';
+import CustomButton from '@/components/ui/CustomButton';
 import { toast } from 'sonner';
 
 const Auth = () => {
@@ -114,14 +114,14 @@ const Auth = () => {
                   </div>
                 </CardContent>
                 <CardFooter>
-                  <Button 
+                  <CustomButton 
                     type="submit" 
                     variant="quantum" 
                     className="w-full" 
                     disabled={isLoading}
                   >
                     {isLoading ? "Signing in..." : "Sign In"}
-                  </Button>
+                  </CustomButton>
                 </CardFooter>
               </form>
             </Card>
@@ -173,14 +173,14 @@ const Auth = () => {
                   </div>
                 </CardContent>
                 <CardFooter>
-                  <Button 
+                  <CustomButton 
                     type="submit" 
                     variant="quantum" 
                     className="w-full" 
                     disabled={isLoading}
                   >
                     {isLoading ? "Creating Account..." : "Create Account"}
-                  </Button>
+                  </CustomButton>
                 </CardFooter>
               </form>
             </Card>

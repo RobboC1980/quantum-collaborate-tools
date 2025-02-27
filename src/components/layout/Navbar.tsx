@@ -1,7 +1,7 @@
 
 import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
-import Button from '../ui/Button';
+import CustomButton from '../ui/CustomButton';
 
 const Navbar = () => {
   const [isScrolled, setIsScrolled] = useState(false);
@@ -48,14 +48,14 @@ const Navbar = () => {
         {/* CTA Buttons */}
         <div className="hidden md:flex items-center space-x-4">
           <Link to="/auth">
-            <Button variant="outline" size="sm">
+            <CustomButton variant="outline" size="sm">
               Sign In
-            </Button>
+            </CustomButton>
           </Link>
           <Link to="/auth">
-            <Button variant="quantum" size="sm" withArrow>
+            <CustomButton variant="quantum" size="sm" withArrow>
               Get Started
-            </Button>
+            </CustomButton>
           </Link>
         </div>
 
@@ -107,14 +107,14 @@ const Navbar = () => {
             </Link>
             <div className="flex flex-col space-y-3 pt-3 border-t">
               <Link to="/auth">
-                <Button variant="outline" className="w-full justify-center">
+                <CustomButton variant="outline" className="w-full justify-center">
                   Sign In
-                </Button>
+                </CustomButton>
               </Link>
               <Link to="/auth">
-                <Button variant="quantum" className="w-full justify-center" withArrow>
+                <CustomButton variant="quantum" className="w-full justify-center" withArrow>
                   Get Started
-                </Button>
+                </CustomButton>
               </Link>
             </div>
           </div>

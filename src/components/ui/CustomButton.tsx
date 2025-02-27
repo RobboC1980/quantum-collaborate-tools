@@ -1,8 +1,7 @@
 
 import React from 'react';
 import { cn } from '@/lib/utils';
-import type { ButtonProps as ShadcnButtonProps } from '@/components/ui/button';
-import { Button as ShadcnButton } from '@/components/ui/button';
+import { Button as ShadcnButton, type ButtonProps as ShadcnButtonProps } from '@/components/ui/button';
 
 interface ButtonProps extends React.ButtonHTMLAttributes<HTMLButtonElement> {
   variant?: 'default' | 'secondary' | 'outline' | 'ghost' | 'link' | 'quantum';
@@ -13,7 +12,7 @@ interface ButtonProps extends React.ButtonHTMLAttributes<HTMLButtonElement> {
   className?: string;
 }
 
-const Button = ({
+const CustomButton = ({
   variant = 'default',
   size = 'default',
   children,
@@ -54,4 +53,4 @@ const Button = ({
   );
 };
 
-export default Button;
+export default CustomButton;
