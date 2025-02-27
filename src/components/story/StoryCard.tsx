@@ -11,6 +11,14 @@ interface StoryCardProps {
   onClick?: () => void;
 }
 
+// Validation function to ensure non-empty string values
+const validateValue = (value: string | undefined | null): string => {
+  if (value === undefined || value === null || value === '') {
+    return 'unknown'; // Default fallback value
+  }
+  return value;
+};
+
 const StoryCard: React.FC<StoryCardProps> = ({ story, onClick }) => {
   // Format dates
   const formatDate = (date: Date) => {
@@ -72,7 +80,15 @@ const StoryCard: React.FC<StoryCardProps> = ({ story, onClick }) => {
     }
   };
 
-  console.log("Rendering story card for:", story.id);
+  // Ensure all values are valid non-empty strings
+  const safeStatus = validateValue(story.status);
+  const safeType = validateValue(story.type);
+  const safeId = validateValue(story.id);
+  const safePriority = validateValue(story.priority);
+  const safeEpicId = validateValue(story.epicId);
+  const safeEpicName = story.epic?.name ? validateValue(story.epic.name) : 'Unknown Epic';
+
+  console.log("Rendering story card for:", safeId);
 
   return (
     <Card 
@@ -82,10 +98,10 @@ const StoryCard: React.FC<StoryCardProps> = ({ story, onClick }) => {
       <CardContent className="p-4 flex-1">
         <div className="flex justify-between mb-2">
           <Badge variant="outline" className="text-xs font-mono">
-            {story.id}
+            {safeId}
           </Badge>
-          <Badge className={getStatusColor(story.status)}>
-            {story.status.replace('-', ' ')}
+          <Badge className={getStatusColor(safeStatus)}>
+            {safeStatus.replace('-', ' ')}
           </Badge>
         </div>
         
@@ -96,13 +112,13 @@ const StoryCard: React.FC<StoryCardProps> = ({ story, onClick }) => {
         </p>
         
         <div className="flex flex-wrap gap-1 mb-3">
-          <Badge className={getTypeColor(story.type)} variant="secondary">
-            {story.type.replace('-', ' ')}
+          <Badge className={getTypeColor(safeType)} variant="secondary">
+            {safeType.replace('-', ' ')}
           </Badge>
           
           {story.tags.slice(0, 2).map((tag, index) => (
             <Badge key={index} variant="outline" className="text-xs">
-              {tag}
+              {validateValue(tag)}
             </Badge>
           ))}
           
@@ -116,7 +132,7 @@ const StoryCard: React.FC<StoryCardProps> = ({ story, onClick }) => {
       
       <CardFooter className="p-4 pt-0 border-t flex justify-between items-center">
         <div className="flex items-center gap-2">
-          {getPriorityIcon(story.priority)}
+          {getPriorityIcon(safePriority)}
           <Badge 
             variant="outline" 
             className="text-xs px-2 py-0 h-5 hover:bg-secondary"
@@ -127,7 +143,7 @@ const StoryCard: React.FC<StoryCardProps> = ({ story, onClick }) => {
           {story.epicId && (
             <div className="flex items-center text-xs text-muted-foreground">
               <Layers className="h-3 w-3 mr-1" />
-              {story.epic?.name || story.epicId}
+              {story.epic ? safeEpicName : safeEpicId}
             </div>
           )}
         </div>

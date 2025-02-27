@@ -14,6 +14,14 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 
+// Validation function to ensure non-empty string values
+const validateSelectValue = (value: string | undefined | null): string => {
+  if (value === undefined || value === null || value === '') {
+    return 'unknown'; // Default fallback value
+  }
+  return value;
+};
+
 interface StoryListProps {
   stories: StoryWithRelations[];
   onCreateStory?: () => void;
@@ -75,7 +83,7 @@ const StoryList: React.FC<StoryListProps> = ({
             </div>
             <div className="flex gap-2">
               <Select
-                value={statusFilter}
+                value={validateSelectValue(statusFilter)}
                 onValueChange={setStatusFilter}
               >
                 <SelectTrigger className="w-[130px]">
@@ -92,7 +100,7 @@ const StoryList: React.FC<StoryListProps> = ({
               </Select>
               
               <Select
-                value={typeFilter}
+                value={validateSelectValue(typeFilter)}
                 onValueChange={setTypeFilter}
               >
                 <SelectTrigger className="w-[130px]">
@@ -118,7 +126,7 @@ const StoryList: React.FC<StoryListProps> = ({
           {filteredStories.length > 0 ? (
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
               {filteredStories.map((story) => (
-                <div key={story.id} className="relative group">
+                <div key={validateSelectValue(story.id)} className="relative group">
                   <StoryCard
                     story={story}
                     onClick={() => onSelectStory && onSelectStory(story)}
