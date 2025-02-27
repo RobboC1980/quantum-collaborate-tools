@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import DashboardLayout from '@/components/layout/DashboardLayout';
@@ -25,11 +24,13 @@ import StoryList from '@/components/story/StoryList';
 import { mockStories } from '@/types/story';
 import { mockTasks } from '@/types/task';
 import { useAuth } from '@/contexts/AuthContext';
+import { useUIInjection } from '@/hooks/useUIInjection';
 
 const Dashboard = () => {
   const navigate = useNavigate();
   const { user } = useAuth();
   const [isLoading, setIsLoading] = useState(true);
+  const uiInjection = useUIInjection();
   
   useEffect(() => {
     // Simulate loading data
