@@ -1,5 +1,5 @@
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import DashboardLayout from '@/components/layout/DashboardLayout';
 import { Button } from '@/components/ui/button';
 import { PlusCircle, Filter, Search, ChevronDown, Trash2 } from 'lucide-react';
@@ -39,6 +39,11 @@ const TaskManagement = () => {
   });
   
   const { toast } = useToast();
+  
+  useEffect(() => {
+    console.log("Task dialog open state:", isTaskDialogOpen);
+    console.log("Selected task:", selectedTask);
+  }, [isTaskDialogOpen, selectedTask]);
   
   const handleCreateTask = () => {
     setSelectedTask(undefined);

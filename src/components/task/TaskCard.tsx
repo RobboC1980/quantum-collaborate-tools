@@ -1,9 +1,9 @@
 
 import React from 'react';
-import { Card, CardContent } from '@/components/ui/card';
-import { Badge } from '@/components/ui/badge';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
-import { Clock, Flag, CheckSquare, MessageSquare, Paperclip } from 'lucide-react';
+import { Badge } from '@/components/ui/badge';
+import { Paperclip, MessageSquare, CheckSquare, Calendar } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { TaskWithRelations } from '@/types/task';
 
@@ -13,138 +13,138 @@ interface TaskCardProps {
   isDragging?: boolean;
 }
 
-const TaskCard: React.FC<TaskCardProps> = ({ task, onClick, isDragging }) => {
-  // Calculate percentage of completed subtasks
-  const completedSubtasks = task.subtasks.filter(st => st.completed).length;
+const TaskCard: React.FC<TaskCardProps> = ({ 
+  task, 
+  onClick, 
+  isDragging = false 
+}) => {
+  // Calculate progress based on completed subtasks
+  const completedSubtasks = task.subtasks.filter(subtask => subtask.completed).length;
   const totalSubtasks = task.subtasks.length;
-  const subtaskCompletionPercentage = totalSubtasks > 0 
-    ? Math.round((completedSubtasks / totalSubtasks) * 100) 
-    : 0;
+  const progress = totalSubtasks > 0 ? (completedSubtasks / totalSubtasks) * 100 : 0;
   
-  // Get priority badge color
-  const getPriorityColor = () => {
-    switch (task.priority) {
-      case 'critical': return 'bg-red-100 text-red-800';
-      case 'high': return 'bg-orange-100 text-orange-800';
-      case 'medium': return 'bg-yellow-100 text-yellow-800';
-      case 'low': return 'bg-green-100 text-green-800';
-      default: return 'bg-gray-100 text-gray-800';
+  // Get priority color
+  const getPriorityColor = (priority: string) => {
+    switch (priority) {
+      case 'critical':
+        return 'bg-red-100 text-red-800';
+      case 'high':
+        return 'bg-orange-100 text-orange-800';
+      case 'medium':
+        return 'bg-yellow-100 text-yellow-800';
+      case 'low':
+        return 'bg-blue-100 text-blue-800';
+      default:
+        return 'bg-gray-100 text-gray-800';
     }
   };
-
-  // Get priority icon
-  const getPriorityIcon = () => {
-    switch (task.priority) {
-      case 'critical': return <Flag className="h-3.5 w-3.5 text-red-600" />;
-      case 'high': return <Flag className="h-3.5 w-3.5 text-orange-500" />;
-      case 'medium': return <Flag className="h-3.5 w-3.5 text-yellow-500" />;
-      case 'low': return <Flag className="h-3.5 w-3.5 text-green-500" />;
-      default: return <Flag className="h-3.5 w-3.5 text-gray-400" />;
-    }
+  
+  // Format date
+  const formatDate = (date: Date) => {
+    return new Date(date).toLocaleDateString('en-US', {
+      month: 'short',
+      day: 'numeric',
+    });
   };
 
+  console.log("Rendering task card for:", task.id);
+  
   return (
     <Card 
       className={cn(
-        "hover:shadow-md transition-shadow cursor-pointer",
-        isDragging ? "shadow-md opacity-75" : ""
+        "hover:border-primary/50 cursor-pointer transition-all transform",
+        isDragging ? "opacity-50 shadow-none" : "shadow-sm"
       )}
       onClick={onClick}
     >
       <CardContent className="p-3">
-        <div className="flex flex-col gap-2">
-          {/* Story Reference */}
-          {task.story && (
-            <div className="text-xs text-gray-500 font-mono">
-              {task.story.id}
+        <div className="flex items-center justify-between mb-2">
+          <Badge variant="outline" className="text-xs font-mono">
+            {task.id}
+          </Badge>
+          <Badge className={getPriorityColor(task.priority)}>
+            {task.priority}
+          </Badge>
+        </div>
+        
+        <h3 className="font-medium text-sm mb-2">
+          {task.title}
+        </h3>
+        
+        {/* Story reference */}
+        <div className="text-xs text-muted-foreground mb-2">
+          in <span className="font-semibold">{task.storyId}</span>
+        </div>
+        
+        {/* Progress bar for subtasks */}
+        {totalSubtasks > 0 && (
+          <div className="mb-2">
+            <div className="flex items-center justify-between text-xs mb-1">
+              <span className="text-muted-foreground flex items-center gap-1">
+                <CheckSquare size={12} />
+                {completedSubtasks}/{totalSubtasks}
+              </span>
+              <span className="font-medium">{Math.round(progress)}%</span>
             </div>
-          )}
-          
-          {/* Task Title */}
-          <h3 className="font-medium text-sm line-clamp-2">{task.title}</h3>
-          
-          {/* Tags */}
-          {task.tags.length > 0 && (
-            <div className="flex flex-wrap gap-1 mt-1">
-              {task.tags.slice(0, 3).map((tag, index) => (
-                <span 
-                  key={index} 
-                  className="bg-gray-100 text-gray-700 text-xs px-1.5 py-0.5 rounded-full"
-                >
-                  {tag}
-                </span>
-              ))}
-              {task.tags.length > 3 && (
-                <span className="text-xs text-gray-500">+{task.tags.length - 3}</span>
-              )}
+            <div className="w-full bg-muted rounded-full h-1.5">
+              <div 
+                className="bg-green-500 h-1.5 rounded-full" 
+                style={{ width: `${progress}%` }}
+              ></div>
             </div>
-          )}
-          
-          {/* Task metadata */}
-          <div className="flex items-center justify-between mt-2">
-            <div className="flex items-center gap-2">
-              {/* Priority */}
-              <div className="flex items-center">
-                {getPriorityIcon()}
+          </div>
+        )}
+        
+        {/* Tags */}
+        {task.tags.length > 0 && (
+          <div className="flex flex-wrap gap-1 mb-2">
+            {task.tags.slice(0, 2).map((tag, index) => (
+              <Badge key={index} variant="outline" className="text-xs">
+                {tag}
+              </Badge>
+            ))}
+            {task.tags.length > 2 && (
+              <Badge variant="outline" className="text-xs">
+                +{task.tags.length - 2}
+              </Badge>
+            )}
+          </div>
+        )}
+        
+        {/* Footer with metadata */}
+        <div className="flex items-center justify-between mt-3 pt-2 border-t border-border">
+          <div className="flex items-center gap-2">
+            {task.dueDate && (
+              <div className="text-xs text-muted-foreground flex items-center">
+                <Calendar size={12} className="mr-1" />
+                {formatDate(task.dueDate)}
               </div>
-              
-              {/* Subtasks */}
-              {totalSubtasks > 0 && (
-                <div className="flex items-center gap-1 text-xs text-gray-600">
-                  <CheckSquare className="h-3.5 w-3.5" />
-                  <span>{completedSubtasks}/{totalSubtasks}</span>
-                </div>
-              )}
-              
-              {/* Comments */}
-              {task.comments && task.comments.length > 0 && (
-                <div className="flex items-center gap-1 text-xs text-gray-600">
-                  <MessageSquare className="h-3.5 w-3.5" />
-                  <span>{task.comments.length}</span>
-                </div>
-              )}
-              
-              {/* Attachments */}
-              {task.attachments.length > 0 && (
-                <div className="flex items-center gap-1 text-xs text-gray-600">
-                  <Paperclip className="h-3.5 w-3.5" />
-                  <span>{task.attachments.length}</span>
-                </div>
-              )}
-            </div>
+            )}
             
-            {/* Assignee */}
-            {task.assignee && (
-              <Avatar className="h-6 w-6">
-                <AvatarImage src={task.assignee.avatarUrl} alt={task.assignee.fullName} />
-                <AvatarFallback>{task.assignee.fullName.charAt(0)}</AvatarFallback>
-              </Avatar>
+            {task.attachments.length > 0 && (
+              <div className="text-xs text-muted-foreground flex items-center">
+                <Paperclip size={12} className="mr-1" />
+                {task.attachments.length}
+              </div>
+            )}
+            
+            {task.comments && task.comments.length > 0 && (
+              <div className="text-xs text-muted-foreground flex items-center">
+                <MessageSquare size={12} className="mr-1" />
+                {task.comments.length}
+              </div>
             )}
           </div>
           
-          {/* Due date if exists */}
-          {task.dueDate && (
-            <div className="flex items-center mt-2 text-xs">
-              <Clock className="h-3.5 w-3.5 mr-1 text-gray-500" />
-              <span className={cn(
-                "text-gray-700",
-                new Date(task.dueDate) < new Date() ? "text-red-600 font-medium" : ""
-              )}>
-                Due {new Date(task.dueDate).toLocaleDateString()}
-              </span>
-            </div>
-          )}
-          
-          {/* Progress bar for subtasks */}
-          {totalSubtasks > 0 && (
-            <div className="mt-2">
-              <div className="w-full bg-gray-200 rounded-full h-1.5">
-                <div 
-                  className="bg-blue-600 h-1.5 rounded-full" 
-                  style={{ width: `${subtaskCompletionPercentage}%` }}
-                />
-              </div>
-            </div>
+          {task.assignee ? (
+            <Avatar className="h-6 w-6">
+              <AvatarImage src={task.assignee.avatarUrl} alt={task.assignee.fullName} />
+              <AvatarFallback>{task.assignee.fullName.charAt(0)}</AvatarFallback>
+            </Avatar>
+          ) : (
+            <Avatar className="h-6 w-6">
+              <AvatarFallback>?</AvatarFallback>
+            </Avatar>
           )}
         </div>
       </CardContent>

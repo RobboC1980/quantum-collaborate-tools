@@ -28,6 +28,11 @@ const StoryManagement = () => {
   const [stories, setStories] = useState<StoryWithRelations[]>(mockStories);
   const { toast } = useToast();
   
+  useEffect(() => {
+    console.log("Dialog open state:", isStoryDialogOpen);
+    console.log("Selected story:", selectedStory);
+  }, [isStoryDialogOpen, selectedStory]);
+  
   // Create a new story
   const handleCreateStory = () => {
     setSelectedStory(null);
