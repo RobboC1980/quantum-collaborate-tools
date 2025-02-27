@@ -17,9 +17,17 @@ import AdminDashboard from './pages/AdminDashboard';
 import NotFound from './pages/NotFound';
 
 // Create a client
-const queryClient = new QueryClient();
+const queryClient = new QueryClient({
+  defaultOptions: {
+    queries: {
+      retry: false,
+      refetchOnWindowFocus: false,
+    },
+  },
+});
 
 function App() {
+  console.log("App rendering");
   return (
     <QueryClientProvider client={queryClient}>
       <TooltipProvider>
@@ -36,9 +44,6 @@ function App() {
               <Route path="/dashboard/stories" element={<ProtectedRoute><StoryManagement /></ProtectedRoute>} />
               <Route path="/dashboard/tasks" element={<ProtectedRoute><TaskManagement /></ProtectedRoute>} />
               <Route path="/admin" element={<ProtectedRoute adminOnly><AdminDashboard /></ProtectedRoute>} />
-              
-              {/* Redirects */}
-              <Route path="/dashboard/*" element={<Navigate to="/dashboard" replace />} />
               
               {/* 404 Page */}
               <Route path="*" element={<NotFound />} />

@@ -8,6 +8,8 @@ import Benefits from '../components/sections/Benefits';
 import Cta from '../components/sections/Cta';
 
 const Index = () => {
+  console.log("Index page rendering");
+  
   useEffect(() => {
     // Smooth scrolling for anchor links
     const handleAnchorClick = (e: MouseEvent) => {

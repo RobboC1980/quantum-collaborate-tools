@@ -4,6 +4,7 @@ import { Link } from 'react-router-dom';
 import CustomButton from '../ui/CustomButton';
 
 const Hero = () => {
+  console.log("Hero component rendering");
   const heroRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
