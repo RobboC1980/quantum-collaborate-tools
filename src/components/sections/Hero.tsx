@@ -61,10 +61,19 @@ const Hero = () => {
           </p>
           
           <div className="flex flex-col sm:flex-row gap-4 animate-fade-in" style={{ animationDelay: '0.8s' }}>
-            <Button variant="quantum" size="xl" withArrow>
+            <Button 
+              variant="quantum" 
+              size="lg" 
+              withArrow
+              className="text-lg py-6 px-8"
+            >
               Start Free Trial
             </Button>
-            <Button variant="outline" size="xl">
+            <Button 
+              variant="outline" 
+              size="lg"
+              className="text-lg py-6 px-8"
+            >
               Watch Demo
             </Button>
           </div>

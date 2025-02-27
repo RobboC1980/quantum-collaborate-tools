@@ -52,10 +52,19 @@ const Cta = () => {
                 </p>
               </div>
               <div className="flex flex-col sm:flex-row gap-4">
-                <Button variant="quantum" size="lg" withArrow>
+                <Button 
+                  variant="quantum" 
+                  size="lg" 
+                  withArrow
+                  className="text-lg py-5 px-7"
+                >
                   Start Free Trial
                 </Button>
-                <Button variant="outline" size="lg">
+                <Button 
+                  variant="outline" 
+                  size="lg"
+                  className="text-lg py-5 px-7"
+                >
                   Schedule Demo
                 </Button>
               </div>
