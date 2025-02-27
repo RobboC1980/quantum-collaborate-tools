@@ -26,21 +26,29 @@ const StoryManagement = () => {
   const [isStoryDialogOpen, setIsStoryDialogOpen] = useState(false);
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
   const [selectedStory, setSelectedStory] = useState<StoryWithRelations | null>(null);
-  const [stories, setStories] = useState<StoryWithRelations[]>(mockStories);
+  const [stories, setStories] = useState<StoryWithRelations[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const { toast } = useToast();
   const { user, profile } = useAuth();
   
   useEffect(() => {
-    // Simulate loading data
+    // Indicate loading is in progress
+    setIsLoading(true);
+    
+    // Load the stories with a small delay to simulate fetching
     const timer = setTimeout(() => {
+      setStories(mockStories);
       setIsLoading(false);
       console.log("StoryManagement: Data loaded");
     }, 300);
     
     console.log("Story Management Page:", { user: !!user, profile });
     
-    return () => clearTimeout(timer);
+    // Cleanup function to prevent state updates after unmount
+    return () => {
+      clearTimeout(timer);
+      console.log("StoryManagement: Component unmounted");
+    };
   }, [user, profile]);
   
   useEffect(() => {
@@ -131,6 +139,7 @@ const StoryManagement = () => {
     setSelectedStory(null);
   };
 
+  // Render a loading spinner while data is loading
   if (isLoading) {
     return (
       <DashboardLayout>

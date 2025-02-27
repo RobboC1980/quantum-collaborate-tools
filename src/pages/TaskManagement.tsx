@@ -11,18 +11,26 @@ import { useToast } from '@/components/ui/use-toast';
 const TaskManagement = () => {
   const [isTaskDialogOpen, setIsTaskDialogOpen] = useState(false);
   const [selectedTask, setSelectedTask] = useState<TaskWithRelations | null>(null);
-  const [tasks, setTasks] = useState<TaskWithRelations[]>(mockTasks);
+  const [tasks, setTasks] = useState<TaskWithRelations[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const { toast } = useToast();
   
   useEffect(() => {
-    // Simulate loading data
+    // Indicate loading is in progress
+    setIsLoading(true);
+    
+    // Load the tasks with a small delay to simulate fetching
     const timer = setTimeout(() => {
+      setTasks(mockTasks);
       setIsLoading(false);
       console.log("TaskManagement: Data loaded");
     }, 300);
     
-    return () => clearTimeout(timer);
+    // Cleanup function to prevent state updates after unmount
+    return () => {
+      clearTimeout(timer);
+      console.log("TaskManagement: Component unmounted");
+    };
   }, []);
   
   const handleCreateTask = () => {
@@ -113,6 +121,7 @@ const TaskManagement = () => {
     });
   };
 
+  // Render a loading spinner while data is loading
   if (isLoading) {
     return (
       <DashboardLayout>
