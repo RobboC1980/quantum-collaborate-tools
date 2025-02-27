@@ -24,7 +24,7 @@ const queryClient = new QueryClient({
       retry: 1,
       retryDelay: 1000,
       staleTime: 0, // Consider everything stale immediately to force refetch on navigation
-      cacheTime: 5 * 60 * 1000, // Cache for 5 minutes
+      gcTime: 5 * 60 * 1000, // Garbage collection time (renamed from cacheTime)
       refetchOnWindowFocus: false,
       refetchOnMount: true, // Refetch when component mounts
       refetchOnReconnect: true,
