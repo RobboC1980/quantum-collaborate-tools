@@ -12,9 +12,11 @@ import {
   Clock, 
   Activity,
   PlusCircle,
-  ListTodo
+  ListTodo,
+  ArrowRight
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
+import { Badge } from '@/components/ui/badge';
 import SprintSummaryCard from '@/components/sprint/SprintSummaryCard';
 
 const Dashboard = () => {
