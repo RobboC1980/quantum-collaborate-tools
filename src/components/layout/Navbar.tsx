@@ -3,10 +3,12 @@ import React, { useState, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import CustomButton from '../ui/CustomButton';
 import { useAuth } from '@/contexts/AuthContext';
+import { LogOut } from 'lucide-react';
+import { toast } from 'sonner';
 
 const Navbar = () => {
   const navigate = useNavigate();
-  const { user } = useAuth();
+  const { user, signOut } = useAuth();
   const [isScrolled, setIsScrolled] = useState(false);
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
 
@@ -18,6 +20,17 @@ const Navbar = () => {
     window.addEventListener('scroll', handleScroll);
     return () => window.removeEventListener('scroll', handleScroll);
   }, []);
+
+  const handleLogout = async () => {
+    try {
+      await signOut();
+      toast.success("Successfully logged out");
+      navigate('/');
+    } catch (error) {
+      console.error("Logout failed:", error);
+      toast.error("Failed to log out. Please try again.");
+    }
+  };
 
   return (
     <header 
@@ -51,11 +64,22 @@ const Navbar = () => {
         {/* CTA Buttons */}
         <div className="hidden md:flex items-center space-x-4">
           {user ? (
-            <Link to="/dashboard">
-              <CustomButton variant="quantum" size="sm">
-                Dashboard
+            <div className="flex items-center space-x-4">
+              <Link to="/dashboard">
+                <CustomButton variant="quantum" size="sm">
+                  Dashboard
+                </CustomButton>
+              </Link>
+              <CustomButton 
+                variant="outline" 
+                size="sm" 
+                onClick={handleLogout}
+                className="flex items-center gap-2"
+              >
+                <LogOut size={16} />
+                Log Out
               </CustomButton>
-            </Link>
+            </div>
           ) : (
             <>
               <Link to="/auth">
@@ -120,11 +144,21 @@ const Navbar = () => {
             </Link>
             <div className="flex flex-col space-y-3 pt-3 border-t">
               {user ? (
-                <Link to="/dashboard">
-                  <CustomButton variant="quantum" className="w-full justify-center">
-                    Dashboard
+                <>
+                  <Link to="/dashboard">
+                    <CustomButton variant="quantum" className="w-full justify-center">
+                      Dashboard
+                    </CustomButton>
+                  </Link>
+                  <CustomButton
+                    variant="outline"
+                    className="w-full justify-center flex items-center gap-2"
+                    onClick={handleLogout}
+                  >
+                    <LogOut size={16} />
+                    Log Out
                   </CustomButton>
-                </Link>
+                </>
               ) : (
                 <>
                   <Link to="/auth">

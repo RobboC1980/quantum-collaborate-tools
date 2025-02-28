@@ -14,10 +14,13 @@ import {
   FileText,
   CheckSquare,
   Layers,
+  LogOut,
 } from 'lucide-react';
 import Breadcrumb from '@/components/navigation/Breadcrumb';
 import ErrorBoundary from '@/components/ui/error-boundary';
 import ROUTES from '@/constants/routes';
+import { useAuth } from '@/contexts/AuthContext';
+import { toast } from 'sonner';
 
 interface DashboardLayoutProps {
   children: React.ReactNode;
@@ -26,6 +29,7 @@ interface DashboardLayoutProps {
 const DashboardLayout: React.FC<DashboardLayoutProps> = ({ children }) => {
   const navigate = useNavigate();
   const location = useLocation();
+  const { signOut } = useAuth();
   
   const navItems = [
     { label: 'Dashboard', icon: <Home size={18} />, path: ROUTES.DASHBOARD.HOME },
@@ -37,6 +41,17 @@ const DashboardLayout: React.FC<DashboardLayoutProps> = ({ children }) => {
     { label: 'Reports', icon: <BarChart2 size={18} />, path: ROUTES.DASHBOARD.REPORTS },
     { label: 'Settings', icon: <Settings size={18} />, path: ROUTES.DASHBOARD.SETTINGS },
   ];
+
+  const handleLogout = async () => {
+    try {
+      await signOut();
+      toast.success("Successfully logged out");
+      navigate('/');
+    } catch (error) {
+      console.error("Logout failed:", error);
+      toast.error("Failed to log out. Please try again.");
+    }
+  };
 
   return (
     <div className="min-h-screen bg-background">
@@ -63,6 +78,17 @@ const DashboardLayout: React.FC<DashboardLayoutProps> = ({ children }) => {
                 </Button>
               </Link>
             ))}
+            
+            <div className="pt-4 mt-4 border-t border-border">
+              <Button
+                variant="ghost"
+                className="w-full justify-start gap-2 text-red-500 hover:text-red-600 hover:bg-red-50"
+                onClick={handleLogout}
+              >
+                <LogOut size={18} />
+                Log Out
+              </Button>
+            </div>
           </nav>
         </aside>
         <main className="col-span-12 md:col-span-9 lg:col-span-10">

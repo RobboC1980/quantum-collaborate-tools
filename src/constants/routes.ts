@@ -12,6 +12,7 @@ export const AUTH_ROUTES = {
   SIGNUP: '/auth?tab=signup',
   FORGOT_PASSWORD: '/auth?tab=forgot-password',
   RESET_PASSWORD: '/auth/reset-password',
+  LOGOUT: '/logout',
 };
 
 // Dashboard routes
