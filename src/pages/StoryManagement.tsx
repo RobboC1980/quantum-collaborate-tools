@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect, useRef } from 'react';
 import DashboardLayout from '@/components/layout/DashboardLayout';
 import { Button } from '@/components/ui/button';
@@ -167,10 +166,6 @@ const StoryManagement = () => {
       <div className="space-y-6">
         <div className="flex items-center justify-between">
           <h1 className="text-2xl font-bold tracking-tight">Stories</h1>
-          <Button onClick={handleCreateStory} className="gap-1">
-            <PlusCircle size={16} />
-            New Story
-          </Button>
         </div>
         
         <StoryList 

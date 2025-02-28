@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { 
   Dialog, 
@@ -248,14 +247,14 @@ const TaskDetailDialog: React.FC<TaskDetailDialogProps> = ({
                 <div className="space-y-2">
                   <Label htmlFor="assignee">Assignee</Label>
                   <Select 
-                    value={formData.assigneeId || ''} 
-                    onValueChange={(value) => handleChange('assigneeId', value)}
+                    value={formData.assigneeId || 'unassigned'} 
+                    onValueChange={(value) => handleChange('assigneeId', value === 'unassigned' ? undefined : value)}
                   >
                     <SelectTrigger>
                       <SelectValue placeholder="Assign to..." />
                     </SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="">Unassigned</SelectItem>
+                      <SelectItem value="unassigned">Unassigned</SelectItem>
                       {mockUsers.map(user => (
                         <SelectItem key={user.id} value={user.id}>
                           {user.fullName}
