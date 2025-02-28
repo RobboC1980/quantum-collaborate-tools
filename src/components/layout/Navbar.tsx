@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import CustomButton from '../ui/CustomButton';
@@ -100,6 +99,7 @@ const Navbar = () => {
         <button 
           className="md:hidden flex items-center"
           onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
+          aria-label={isMobileMenuOpen ? "Close menu" : "Open menu"}
         >
           <svg 
             xmlns="http://www.w3.org/2000/svg" 

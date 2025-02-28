@@ -1,5 +1,4 @@
-
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
@@ -10,18 +9,28 @@ import { toast } from 'sonner';
 import { useAuth } from '@/contexts/AuthContext';
 import { supabase } from '@/integrations/supabase/client';
 import { Eye, EyeOff, Lock, Mail, User } from 'lucide-react';
+import '../styles/auth.css';
 
 const Auth = () => {
   const navigate = useNavigate();
   const { signIn, signUp, user } = useAuth();
   const [isLoading, setIsLoading] = useState(false);
   const [activeTab, setActiveTab] = useState('signin');
+  const isMounted = useRef(true);
   
   // Form state
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [name, setName] = useState('');
   const [showPassword, setShowPassword] = useState(false);
+  
+  // Set up and clean up isMounted ref
+  useEffect(() => {
+    isMounted.current = true;
+    return () => {
+      isMounted.current = false;
+    };
+  }, []);
   
   // Redirect if user is already logged in
   useEffect(() => {
@@ -43,16 +52,21 @@ const Auth = () => {
     try {
       const { error } = await signIn(email, password);
       
+      if (!isMounted.current) return;
+      
       if (error) {
         toast.error(error.message);
       } else {
         navigate('/dashboard');
       }
     } catch (error: any) {
+      if (!isMounted.current) return;
       console.error('Authentication error:', error);
       toast.error(error?.message || 'Failed to sign in');
     } finally {
-      setIsLoading(false);
+      if (isMounted.current) {
+        setIsLoading(false);
+      }
     }
   };
   
@@ -74,6 +88,8 @@ const Auth = () => {
     try {
       const { error } = await signUp(email, password, { full_name: name });
       
+      if (!isMounted.current) return;
+      
       if (error) {
         toast.error(error.message);
       } else {
@@ -81,10 +97,13 @@ const Auth = () => {
         toast.success('Account created successfully! Please check your email for verification.');
       }
     } catch (error: any) {
+      if (!isMounted.current) return;
       console.error('Registration error:', error);
       toast.error(error?.message || 'Failed to create account');
     } finally {
-      setIsLoading(false);
+      if (isMounted.current) {
+        setIsLoading(false);
+      }
     }
   };
 
@@ -100,16 +119,21 @@ const Auth = () => {
         redirectTo: `${window.location.origin}/auth/reset-password`,
       });
 
+      if (!isMounted.current) return;
+
       if (error) {
         toast.error(error.message);
       } else {
         toast.success('Password reset instructions sent to your email');
       }
     } catch (error: any) {
+      if (!isMounted.current) return;
       console.error('Password reset error:', error);
       toast.error(error?.message || 'Failed to send password reset instructions');
     } finally {
-      setIsLoading(false);
+      if (isMounted.current) {
+        setIsLoading(false);
+      }
     }
   };
 
@@ -120,9 +144,9 @@ const Auth = () => {
   return (
     <div className="min-h-screen flex items-center justify-center bg-gradient-to-b from-quantum-100 to-background p-4">
       <div className="absolute inset-0 overflow-hidden">
-        <div className="parallax-item" data-depth="0.02" style={{ position: 'absolute', top: '15%', left: '5%', width: '300px', height: '300px', borderRadius: '50%', background: 'radial-gradient(circle, rgba(163, 210, 255, 0.2) 0%, rgba(255, 255, 255, 0) 70%)' }}></div>
-        <div className="parallax-item" data-depth="0.03" style={{ position: 'absolute', top: '60%', right: '10%', width: '250px', height: '250px', borderRadius: '50%', background: 'radial-gradient(circle, rgba(66, 152, 255, 0.15) 0%, rgba(255, 255, 255, 0) 70%)' }}></div>
-        <div className="parallax-item" data-depth="0.04" style={{ position: 'absolute', bottom: '20%', left: '15%', width: '200px', height: '200px', borderRadius: '50%', background: 'radial-gradient(circle, rgba(26, 124, 255, 0.1) 0%, rgba(255, 255, 255, 0) 70%)' }}></div>
+        <div className="parallax-item parallax-bubble parallax-bubble-1" data-depth="0.02"></div>
+        <div className="parallax-item parallax-bubble parallax-bubble-2" data-depth="0.03"></div>
+        <div className="parallax-item parallax-bubble parallax-bubble-3" data-depth="0.04"></div>
       </div>
       
       <div className="w-full max-w-md z-10">

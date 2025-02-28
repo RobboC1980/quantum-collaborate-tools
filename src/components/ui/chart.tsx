@@ -100,7 +100,7 @@ ${colorConfig
 
 const ChartTooltip = RechartsPrimitive.Tooltip
 
-const ChartTooltipContent = React.forwardRef<
+const ChartTooltipContent = React.memo(React.forwardRef<
   HTMLDivElement,
   React.ComponentProps<typeof RechartsPrimitive.Tooltip> &
     React.ComponentProps<"div"> & {
@@ -251,12 +251,12 @@ const ChartTooltipContent = React.forwardRef<
       </div>
     )
   }
-)
-ChartTooltipContent.displayName = "ChartTooltip"
+))
+ChartTooltipContent.displayName = "ChartTooltipContent"
 
 const ChartLegend = RechartsPrimitive.Legend
 
-const ChartLegendContent = React.forwardRef<
+const ChartLegendContent = React.memo(React.forwardRef<
   HTMLDivElement,
   React.ComponentProps<"div"> &
     Pick<RechartsPrimitive.LegendProps, "payload" | "verticalAlign"> & {
@@ -297,12 +297,7 @@ const ChartLegendContent = React.forwardRef<
               {itemConfig?.icon && !hideIcon ? (
                 <itemConfig.icon />
               ) : (
-                <div
-                  className="h-2 w-2 shrink-0 rounded-[2px]"
-                  style={{
-                    backgroundColor: item.color,
-                  }}
-                />
+                <ColorDot color={item.color} />
               )}
               {itemConfig?.label}
             </div>
@@ -311,8 +306,8 @@ const ChartLegendContent = React.forwardRef<
       </div>
     )
   }
-)
-ChartLegendContent.displayName = "ChartLegend"
+))
+ChartLegendContent.displayName = "ChartLegendContent"
 
 // Helper to extract item config from a payload.
 function getPayloadConfigFromPayload(
@@ -352,6 +347,17 @@ function getPayloadConfigFromPayload(
     ? config[configLabelKey]
     : config[key as keyof typeof config]
 }
+
+const ColorDot = ({ color }: { color: string }) => {
+  return (
+    <div 
+      className="h-2 w-2 shrink-0 rounded-[2px] chart-color-dot"
+      style={{ 
+        "--dot-color": color 
+      } as React.CSSProperties}
+    />
+  );
+};
 
 export {
   ChartContainer,
