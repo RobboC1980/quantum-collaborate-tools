@@ -43,17 +43,19 @@ const apiClient = {
   /**
    * Fetch data from Supabase
    */
-  async fetch<T>(tableName: string, options?: { 
-    select?: string,
-    match?: Record<string, any>,
-    filters?: Array<[string, string, any]>,
-    order?: { column: string, ascending?: boolean },
-    limit?: number, 
-    single?: boolean
-  }): Promise<ApiResponse<T>> {
+  async fetch<T = any>(
+    tableName: 'profiles', 
+    options?: { 
+      select?: string,
+      match?: Record<string, any>,
+      filters?: Array<[string, string, any]>,
+      order?: { column: string, ascending?: boolean },
+      limit?: number, 
+      single?: boolean
+    }
+  ): Promise<ApiResponse<T>> {
     try {
-      // Cast tableName to string to ensure it's treated as a string
-      let query = supabase.from(tableName as string).select(options?.select || '*');
+      let query = supabase.from(tableName).select(options?.select || '*');
       
       // Apply filters
       if (options?.match) {
@@ -63,7 +65,20 @@ const apiClient = {
       if (options?.filters) {
         options.filters.forEach(filter => {
           if (Array.isArray(filter) && filter.length >= 3) {
-            query = query.filter(filter[0], filter[1], filter[2]);
+            const [column, operator, value] = filter;
+            // We need to do this type casting because TypeScript can't infer
+            // that filter will be the correct structure
+            if (operator === 'eq') query = query.eq(column, value);
+            else if (operator === 'neq') query = query.neq(column, value);
+            else if (operator === 'gt') query = query.gt(column, value);
+            else if (operator === 'gte') query = query.gte(column, value);
+            else if (operator === 'lt') query = query.lt(column, value);
+            else if (operator === 'lte') query = query.lte(column, value);
+            else if (operator === 'like') query = query.like(column, value);
+            else if (operator === 'ilike') query = query.ilike(column, value);
+            else if (operator === 'is') query = query.is(column, value);
+            else if (operator === 'in') query = query.in(column, value);
+            else console.warn(`Unsupported operator: ${operator}`);
           }
         });
       }
@@ -91,7 +106,7 @@ const apiClient = {
       
       return { data: response.data as T, error: null };
     } catch (error) {
-      const apiError = handleApiError(error, `Failed to fetch data from ${String(tableName)}`);
+      const apiError = handleApiError(error, `Failed to fetch data from ${tableName}`);
       return { data: null, error: apiError };
     }
   },
@@ -99,13 +114,15 @@ const apiClient = {
   /**
    * Insert data into Supabase
    */
-  async create<T>(tableName: string, data: Record<string, any>, options?: { 
-    returning?: string,
-    upsert?: boolean
-  }): Promise<ApiResponse<T>> {
+  async create<T = any>(
+    tableName: 'profiles', 
+    data: { avatar_url?: string; full_name?: string; id: string; role?: string; }, 
+    options?: { 
+      returning?: string,
+    }
+  ): Promise<ApiResponse<T>> {
     try {
-      // Start with basic insert
-      let query = supabase.from(tableName as string).insert(data);
+      let query = supabase.from(tableName).insert(data);
       
       // Handle returning fields if specified
       if (options?.returning) {
@@ -124,7 +141,7 @@ const apiClient = {
         error: null 
       };
     } catch (error) {
-      const apiError = handleApiError(error, `Failed to create data in ${String(tableName)}`);
+      const apiError = handleApiError(error, `Failed to create data in ${tableName}`);
       return { data: null, error: apiError };
     }
   },
@@ -132,20 +149,25 @@ const apiClient = {
   /**
    * Update data in Supabase
    */
-  async update<T>(tableName: string, id: string | number, data: Record<string, any>, options?: { 
-    returning?: string,
-    match?: Record<string, any>,
-    idColumn?: string
-  }): Promise<ApiResponse<T>> {
+  async update<T = any>(
+    tableName: 'profiles', 
+    id: string, 
+    data: { avatar_url?: string; full_name?: string; role?: string; }, 
+    options?: { 
+      returning?: string,
+      match?: Record<string, any>,
+      idColumn?: string
+    }
+  ): Promise<ApiResponse<T>> {
     try {
       let query;
       
       // Use match object or id for filtering
       if (options?.match) {
-        query = supabase.from(tableName as string).update(data).match(options.match);
+        query = supabase.from(tableName).update(data).match(options.match);
       } else {
         const idColumn = options?.idColumn || 'id';
-        query = supabase.from(tableName as string).update(data).eq(idColumn, id);
+        query = supabase.from(tableName).update(data).eq(idColumn, id);
       }
       
       // Handle returning fields if specified
@@ -165,7 +187,7 @@ const apiClient = {
         error: null 
       };
     } catch (error) {
-      const apiError = handleApiError(error, `Failed to update data in ${String(tableName)}`);
+      const apiError = handleApiError(error, `Failed to update data in ${tableName}`);
       return { data: null, error: apiError };
     }
   },
@@ -173,20 +195,24 @@ const apiClient = {
   /**
    * Delete data from Supabase
    */
-  async delete<T>(tableName: string, id: string | number, options?: { 
-    returning?: string,
-    match?: Record<string, any>,
-    idColumn?: string
-  }): Promise<ApiResponse<T>> {
+  async delete<T = any>(
+    tableName: 'profiles', 
+    id: string, 
+    options?: { 
+      returning?: string,
+      match?: Record<string, any>,
+      idColumn?: string
+    }
+  ): Promise<ApiResponse<T>> {
     try {
       let query;
       
       // Use match object or id for filtering
       if (options?.match) {
-        query = supabase.from(tableName as string).delete().match(options.match);
+        query = supabase.from(tableName).delete().match(options.match);
       } else {
         const idColumn = options?.idColumn || 'id';
-        query = supabase.from(tableName as string).delete().eq(idColumn, id);
+        query = supabase.from(tableName).delete().eq(idColumn, id);
       }
       
       // Handle returning fields if specified
@@ -206,7 +232,7 @@ const apiClient = {
         error: null 
       };
     } catch (error) {
-      const apiError = handleApiError(error, `Failed to delete data from ${String(tableName)}`);
+      const apiError = handleApiError(error, `Failed to delete data in ${tableName}`);
       return { data: null, error: apiError };
     }
   },
@@ -214,7 +240,7 @@ const apiClient = {
   /**
    * Execute a custom query using Supabase functions
    */
-  async executeFunction<T>(functionName: string, payload?: any): Promise<ApiResponse<T>> {
+  async executeFunction<T = any>(functionName: string, payload?: any): Promise<ApiResponse<T>> {
     try {
       const { data, error } = await supabase.functions.invoke(functionName, {
         body: payload,

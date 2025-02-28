@@ -12,11 +12,23 @@ import apiClient, { ApiResponse } from '@/api/api-client';
 import { toast } from '@/components/ui/use-toast';
 
 /**
+ * Type for the profile data
+ */
+export type ProfileData = {
+  id: string;
+  full_name?: string;
+  avatar_url?: string;
+  role?: string;
+  created_at?: string;
+  updated_at?: string;
+};
+
+/**
  * Hook for fetching data from the API with React Query
  */
-export function useFetch<T>(
+export function useFetch<T = any>(
   queryKey: QueryKey,
-  tableName: string,
+  tableName: 'profiles',
   options?: {
     apiOptions?: Parameters<typeof apiClient.fetch>[1],
     queryOptions?: Omit<UseQueryOptions<ApiResponse<T>, Error, ApiResponse<T>, QueryKey>, 'queryKey' | 'queryFn'>,
@@ -27,37 +39,34 @@ export function useFetch<T>(
     queryKey,
     queryFn: () => apiClient.fetch<T>(tableName, options?.apiOptions),
     ...options?.queryOptions,
-    // Wrap the success callback in meta to follow TanStack Query v5 pattern
-    meta: {
-      ...(options?.queryOptions?.meta || {}),
-      onSuccess: (data: ApiResponse<T>) => {
-        if (options?.successMessage && data.data) {
-          toast({
-            title: 'Success',
-            description: options.successMessage,
-          });
-        }
-        
-        // Call the original onSuccess if provided
-        if (options?.queryOptions?.meta?.onSuccess) {
-          // Type assertion to handle the function properly
-          const onSuccess = options?.queryOptions?.meta?.onSuccess as unknown as 
-            (data: ApiResponse<T>) => void;
-          onSuccess(data);
-        }
+    onSuccess: (data) => {
+      if (options?.successMessage && data.data) {
+        toast({
+          title: 'Success',
+          description: options.successMessage,
+        });
       }
-    }
+      
+      // Call the original onSuccess if provided
+      if (options?.queryOptions?.onSuccess) {
+        options.queryOptions.onSuccess(data);
+      }
+    },
   });
 }
 
 /**
  * Hook for creating data in the API with React Query
  */
-export function useCreate<T>(
-  tableName: string,
+export function useCreate<T = any>(
+  tableName: 'profiles',
   options?: {
     apiOptions?: Parameters<typeof apiClient.create>[2],
-    mutationOptions?: Omit<UseMutationOptions<ApiResponse<T>, Error, Record<string, any>>, 'mutationFn'>,
+    mutationOptions?: Omit<UseMutationOptions<
+      ApiResponse<T>, 
+      Error, 
+      { avatar_url?: string; full_name?: string; id: string; role?: string; }
+    >, 'mutationFn'>,
     invalidateQueries?: QueryKey[],
     successMessage?: string,
   }
@@ -65,8 +74,12 @@ export function useCreate<T>(
   const queryClient = useQueryClient();
   const [isLoading, setIsLoading] = useState(false);
   
-  const mutation = useMutation<ApiResponse<T>, Error, Record<string, any>>({
-    mutationFn: (data: Record<string, any>) => {
+  const mutation = useMutation<
+    ApiResponse<T>, 
+    Error, 
+    { avatar_url?: string; full_name?: string; id: string; role?: string; }
+  >({
+    mutationFn: (data) => {
       setIsLoading(true);
       return apiClient.create<T>(tableName, data, options?.apiOptions);
     },
@@ -103,14 +116,14 @@ export function useCreate<T>(
 /**
  * Hook for updating data in the API with React Query
  */
-export function useUpdate<T>(
-  tableName: string,
+export function useUpdate<T = any>(
+  tableName: 'profiles',
   options?: {
     apiOptions?: Parameters<typeof apiClient.update>[3],
     mutationOptions?: Omit<UseMutationOptions<
       ApiResponse<T>, 
       Error, 
-      { id: string | number; data: Record<string, any> }
+      { id: string; data: { avatar_url?: string; full_name?: string; role?: string; } }
     >, 'mutationFn'>,
     invalidateQueries?: QueryKey[],
     successMessage?: string,
@@ -122,9 +135,9 @@ export function useUpdate<T>(
   const mutation = useMutation<
     ApiResponse<T>, 
     Error, 
-    { id: string | number; data: Record<string, any> }
+    { id: string; data: { avatar_url?: string; full_name?: string; role?: string; } }
   >({
-    mutationFn: ({ id, data }: { id: string | number; data: Record<string, any> }) => {
+    mutationFn: ({ id, data }) => {
       setIsLoading(true);
       return apiClient.update<T>(tableName, id, data, options?.apiOptions);
     },
@@ -161,14 +174,14 @@ export function useUpdate<T>(
 /**
  * Hook for deleting data in the API with React Query
  */
-export function useDelete<T>(
-  tableName: string,
+export function useDelete<T = any>(
+  tableName: 'profiles',
   options?: {
     apiOptions?: Parameters<typeof apiClient.delete>[2],
     mutationOptions?: Omit<UseMutationOptions<
       ApiResponse<T>, 
       Error, 
-      string | number
+      string
     >, 'mutationFn'>,
     invalidateQueries?: QueryKey[],
     successMessage?: string,
@@ -177,8 +190,8 @@ export function useDelete<T>(
   const queryClient = useQueryClient();
   const [isLoading, setIsLoading] = useState(false);
   
-  const mutation = useMutation<ApiResponse<T>, Error, string | number>({
-    mutationFn: (id: string | number) => {
+  const mutation = useMutation<ApiResponse<T>, Error, string>({
+    mutationFn: (id) => {
       setIsLoading(true);
       return apiClient.delete<T>(tableName, id, options?.apiOptions);
     },
@@ -215,7 +228,7 @@ export function useDelete<T>(
 /**
  * Hook for executing a custom function
  */
-export function useExecuteFunction<T, P = any>(
+export function useExecuteFunction<T = any, P = any>(
   functionName: string,
   options?: {
     mutationOptions?: Omit<UseMutationOptions<ApiResponse<T>, Error, P>, 'mutationFn'>,
