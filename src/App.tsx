@@ -1,4 +1,3 @@
-
 import React from 'react';
 import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
@@ -18,6 +17,7 @@ import StoryManagement from './pages/StoryManagement';
 import TaskManagement from './pages/TaskManagement';
 import AdminDashboard from './pages/AdminDashboard';
 import NotFound from './pages/NotFound';
+import EpicManagement from './pages/EpicManagement';
 
 // Create a client with more robust settings
 const queryClient = new QueryClient({
@@ -77,12 +77,10 @@ function App() {
                   </ProtectedRoute>
                 } />
                 
+                {/* Implemented routes */}
+                <Route path={ROUTES.DASHBOARD.EPICS} element={<EpicManagement />} />
+                
                 {/* Not yet implemented routes - redirect to NotFound */}
-                <Route path={ROUTES.DASHBOARD.EPICS} element={
-                  <ProtectedRoute>
-                    <NotFound />
-                  </ProtectedRoute>
-                } />
                 <Route path={ROUTES.DASHBOARD.TEAM} element={
                   <ProtectedRoute>
                     <NotFound />
