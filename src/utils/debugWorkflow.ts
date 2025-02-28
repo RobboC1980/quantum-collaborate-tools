@@ -7,6 +7,8 @@
  * maintain a consistent debugging process.
  */
 
+import React from 'react';
+
 type DebugAttempt = {
   id: number;
   timestamp: Date;
