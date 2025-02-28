@@ -162,11 +162,6 @@ const EpicList: React.FC<EpicListProps> = ({
               <SortDesc className="h-4 w-4" />
             )}
           </Button>
-          
-          <Button onClick={onCreateEpic}>
-            <PlusCircle className="mr-2 h-4 w-4" />
-            New Epic
-          </Button>
         </div>
       </div>
       
