@@ -15,6 +15,9 @@ import {
   CheckSquare,
   Layers,
 } from 'lucide-react';
+import Breadcrumb from '@/components/navigation/Breadcrumb';
+import ErrorBoundary from '@/components/ui/error-boundary';
+import ROUTES from '@/constants/routes';
 
 interface DashboardLayoutProps {
   children: React.ReactNode;
@@ -25,14 +28,14 @@ const DashboardLayout: React.FC<DashboardLayoutProps> = ({ children }) => {
   const location = useLocation();
   
   const navItems = [
-    { label: 'Dashboard', icon: <Home size={18} />, path: '/dashboard' },
-    { label: 'Sprints', icon: <Calendar size={18} />, path: '/dashboard/sprints' },
-    { label: 'Stories', icon: <FileText size={18} />, path: '/dashboard/stories' },
-    { label: 'Tasks', icon: <CheckSquare size={18} />, path: '/dashboard/tasks' },
-    { label: 'Epics', icon: <Layers size={18} />, path: '/dashboard/epics' },
-    { label: 'Team', icon: <Users size={18} />, path: '/dashboard/team' },
-    { label: 'Reports', icon: <BarChart2 size={18} />, path: '/dashboard/reports' },
-    { label: 'Settings', icon: <Settings size={18} />, path: '/dashboard/settings' },
+    { label: 'Dashboard', icon: <Home size={18} />, path: ROUTES.DASHBOARD.HOME },
+    { label: 'Sprints', icon: <Calendar size={18} />, path: ROUTES.DASHBOARD.SPRINTS },
+    { label: 'Stories', icon: <FileText size={18} />, path: ROUTES.DASHBOARD.STORIES },
+    { label: 'Tasks', icon: <CheckSquare size={18} />, path: ROUTES.DASHBOARD.TASKS },
+    { label: 'Epics', icon: <Layers size={18} />, path: ROUTES.DASHBOARD.EPICS },
+    { label: 'Team', icon: <Users size={18} />, path: ROUTES.DASHBOARD.TEAM },
+    { label: 'Reports', icon: <BarChart2 size={18} />, path: ROUTES.DASHBOARD.REPORTS },
+    { label: 'Settings', icon: <Settings size={18} />, path: ROUTES.DASHBOARD.SETTINGS },
   ];
 
   return (
@@ -63,7 +66,12 @@ const DashboardLayout: React.FC<DashboardLayoutProps> = ({ children }) => {
           </nav>
         </aside>
         <main className="col-span-12 md:col-span-9 lg:col-span-10">
-          {children}
+          <div className="mb-6">
+            <Breadcrumb />
+          </div>
+          <ErrorBoundary>
+            {children}
+          </ErrorBoundary>
         </main>
       </div>
       <Footer />

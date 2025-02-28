@@ -6,6 +6,8 @@ import { Toaster } from "@/components/ui/toaster";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { AuthProvider } from './contexts/AuthContext';
 import ProtectedRoute from './components/auth/ProtectedRoute';
+import ErrorBoundary from './components/ui/error-boundary';
+import ROUTES from './constants/routes';
 
 // Pages
 import Index from './pages/Index';
@@ -36,72 +38,76 @@ function App() {
   console.log("App rendering");
   
   return (
-    <QueryClientProvider client={queryClient}>
-      <Router>
-        <TooltipProvider>
-          <AuthProvider>
-            <Routes>
-              {/* Public Routes */}
-              <Route path="/" element={<Index />} />
-              <Route path="/auth" element={<Auth />} />
-              
-              {/* Protected Routes */}
-              <Route path="/dashboard" element={
-                <ProtectedRoute>
-                  <Dashboard />
-                </ProtectedRoute>
-              } />
-              <Route path="/dashboard/sprints" element={
-                <ProtectedRoute>
-                  <SprintManagement />
-                </ProtectedRoute>
-              } />
-              <Route path="/dashboard/stories" element={
-                <ProtectedRoute>
-                  <StoryManagement />
-                </ProtectedRoute>
-              } />
-              <Route path="/dashboard/tasks" element={
-                <ProtectedRoute>
-                  <TaskManagement />
-                </ProtectedRoute>
-              } />
-              <Route path="/admin" element={
-                <ProtectedRoute adminOnly>
-                  <AdminDashboard />
-                </ProtectedRoute>
-              } />
-              
-              {/* Not yet implemented routes - redirect to NotFound */}
-              <Route path="/dashboard/epics" element={
-                <ProtectedRoute>
-                  <NotFound />
-                </ProtectedRoute>
-              } />
-              <Route path="/dashboard/team" element={
-                <ProtectedRoute>
-                  <NotFound />
-                </ProtectedRoute>
-              } />
-              <Route path="/dashboard/reports" element={
-                <ProtectedRoute>
-                  <NotFound />
-                </ProtectedRoute>
-              } />
-              <Route path="/dashboard/settings" element={
-                <ProtectedRoute>
-                  <NotFound />
-                </ProtectedRoute>
-              } />
-              
-              {/* 404 Page */}
-              <Route path="*" element={<NotFound />} />
-            </Routes>
-            <Toaster />
-          </AuthProvider>
-        </TooltipProvider>
-      </Router>
-    </QueryClientProvider>
+    <ErrorBoundary>
+      <QueryClientProvider client={queryClient}>
+        <Router>
+          <TooltipProvider>
+            <AuthProvider>
+              <Routes>
+                {/* Public Routes */}
+                <Route path={ROUTES.PUBLIC.HOME} element={<Index />} />
+                <Route path={ROUTES.AUTH.LOGIN} element={<Auth />} />
+                
+                {/* Dashboard Routes */}
+                <Route path={ROUTES.DASHBOARD.HOME} element={
+                  <ProtectedRoute>
+                    <Dashboard />
+                  </ProtectedRoute>
+                } />
+                <Route path={ROUTES.DASHBOARD.SPRINTS} element={
+                  <ProtectedRoute>
+                    <SprintManagement />
+                  </ProtectedRoute>
+                } />
+                <Route path={ROUTES.DASHBOARD.STORIES} element={
+                  <ProtectedRoute>
+                    <StoryManagement />
+                  </ProtectedRoute>
+                } />
+                <Route path={ROUTES.DASHBOARD.TASKS} element={
+                  <ProtectedRoute>
+                    <TaskManagement />
+                  </ProtectedRoute>
+                } />
+                
+                {/* Admin Routes */}
+                <Route path={ROUTES.ADMIN.HOME} element={
+                  <ProtectedRoute adminOnly>
+                    <AdminDashboard />
+                  </ProtectedRoute>
+                } />
+                
+                {/* Not yet implemented routes - redirect to NotFound */}
+                <Route path={ROUTES.DASHBOARD.EPICS} element={
+                  <ProtectedRoute>
+                    <NotFound />
+                  </ProtectedRoute>
+                } />
+                <Route path={ROUTES.DASHBOARD.TEAM} element={
+                  <ProtectedRoute>
+                    <NotFound />
+                  </ProtectedRoute>
+                } />
+                <Route path={ROUTES.DASHBOARD.REPORTS} element={
+                  <ProtectedRoute>
+                    <NotFound />
+                  </ProtectedRoute>
+                } />
+                <Route path={ROUTES.DASHBOARD.SETTINGS} element={
+                  <ProtectedRoute>
+                    <NotFound />
+                  </ProtectedRoute>
+                } />
+                
+                {/* 404 Page */}
+                <Route path="*" element={<NotFound />} />
+              </Routes>
+              <Toaster />
+            </AuthProvider>
+          </TooltipProvider>
+        </Router>
+      </QueryClientProvider>
+    </ErrorBoundary>
   );
 }
 
