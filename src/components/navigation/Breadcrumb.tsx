@@ -1,4 +1,3 @@
-
 import React from 'react';
 import { Link, useLocation } from 'react-router-dom';
 import { ChevronRight, Home } from 'lucide-react';
@@ -29,7 +28,7 @@ const Breadcrumb: React.FC<BreadcrumbProps> = ({
     <nav className="flex items-center text-sm">
       <ol className="flex items-center space-x-1">
         {allItems.map((item, index) => (
-          <li key={item.href} className="flex items-center">
+          <li key={`${item.href}-${index}`} className="flex items-center">
             {index > 0 && (
               <ChevronRight className="h-4 w-4 text-muted-foreground mx-1" />
             )}
