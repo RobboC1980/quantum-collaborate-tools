@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import DashboardLayout from '@/components/layout/DashboardLayout';
 import { Button } from '@/components/ui/button';
-import { PlusCircle, Trash2 } from 'lucide-react';
+import { PlusCircle, Trash2, Sparkles } from 'lucide-react';
 import StoryList from '@/components/story/StoryList';
 import StoryDetailDialog from '@/components/story/StoryDetailDialog';
 import { 
@@ -20,13 +20,36 @@ import {
 } from "@/components/ui/alert-dialog";
 import { useToast } from '@/components/ui/use-toast';
 import { useAuth } from '@/contexts/AuthContext';
+import TaskGenerator from '@/components/ai/TaskGenerator';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '@/components/ui/dialog';
+import { Task } from '@/types/task';
+
+// Simple PageHeader component
+const PageHeader: React.FC<{
+  title: string;
+  description?: string;
+  children?: React.ReactNode;
+}> = ({ title, description, children }) => {
+  return (
+    <div className="flex items-center justify-between mb-6">
+      <div>
+        <h1 className="text-2xl font-bold tracking-tight">{title}</h1>
+        {description && <p className="text-muted-foreground">{description}</p>}
+      </div>
+      <div className="flex items-center gap-2">
+        {children}
+      </div>
+    </div>
+  );
+};
 
 const StoryManagement = () => {
   const mountedRef = useRef(true);
   const [isStoryDialogOpen, setIsStoryDialogOpen] = useState(false);
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
+  const [isTaskGeneratorOpen, setIsTaskGeneratorOpen] = useState(false);
   const [selectedStory, setSelectedStory] = useState<StoryWithRelations | null>(null);
-  const [stories, setStories] = useState<StoryWithRelations[]>([]);
+  const [stories, setStories] = useState<StoryWithRelations[]>(mockStories);
   const [isLoading, setIsLoading] = useState(true);
   const { toast } = useToast();
   const { user, profile } = useAuth();
@@ -150,6 +173,27 @@ const StoryManagement = () => {
     setSelectedStory(null);
   };
 
+  // Handle generating tasks for a story
+  const handleGenerateTasks = (story: StoryWithRelations) => {
+    setSelectedStory(story);
+    setIsTaskGeneratorOpen(true);
+  };
+  
+  // Handle saving generated tasks
+  const handleSaveTasks = (tasks: Task[]) => {
+    // In a real application, you would save these tasks to your backend
+    console.log('Saving generated tasks:', tasks);
+    
+    // Show success message
+    toast({
+      title: 'Tasks Generated',
+      description: `${tasks.length} tasks have been created for story "${selectedStory?.title}"`,
+    });
+    
+    // Close the dialog
+    setIsTaskGeneratorOpen(false);
+  };
+
   // Render a loading spinner while data is loading
   if (isLoading) {
     return (
@@ -163,16 +207,18 @@ const StoryManagement = () => {
 
   return (
     <DashboardLayout>
-      <div className="space-y-6">
-        <div className="flex items-center justify-between">
-          <h1 className="text-2xl font-bold tracking-tight">Stories</h1>
-        </div>
+      <div className="container mx-auto py-6 space-y-6">
+        <PageHeader
+          title="Story Management"
+          description="Create and manage your stories"
+        />
         
-        <StoryList 
+        <StoryList
           stories={stories}
-          onCreateStory={handleCreateStory}
+          onCreateStory={() => setIsStoryDialogOpen(true)}
           onSelectStory={handleEditStory}
           onDeleteStory={handleDeleteClick}
+          onGenerateTasks={handleGenerateTasks}
         />
         
         {/* Story Creation/Edit Dialog */}
@@ -180,27 +226,36 @@ const StoryManagement = () => {
           isOpen={isStoryDialogOpen}
           onClose={() => setIsStoryDialogOpen(false)}
           onSave={handleSaveStory}
-          story={selectedStory || undefined}
+          story={selectedStory}
         />
         
         {/* Delete Confirmation Dialog */}
         <AlertDialog open={isDeleteDialogOpen} onOpenChange={setIsDeleteDialogOpen}>
           <AlertDialogContent>
             <AlertDialogHeader>
-              <AlertDialogTitle>Are you sure?</AlertDialogTitle>
+              <AlertDialogTitle>Delete Story</AlertDialogTitle>
               <AlertDialogDescription>
-                This will permanently delete the story "{selectedStory?.title}" and all associated tasks. This action cannot be undone.
+                Are you sure you want to delete this story? This action cannot be undone.
               </AlertDialogDescription>
             </AlertDialogHeader>
             <AlertDialogFooter>
               <AlertDialogCancel>Cancel</AlertDialogCancel>
-              <AlertDialogAction onClick={handleDeleteStory} className="bg-destructive text-destructive-foreground">
-                <Trash2 className="mr-2 h-4 w-4" />
+              <AlertDialogAction onClick={handleDeleteStory} className="bg-destructive text-destructive-foreground hover:bg-destructive/90">
                 Delete
               </AlertDialogAction>
             </AlertDialogFooter>
           </AlertDialogContent>
         </AlertDialog>
+        
+        {/* Task Generator Dialog */}
+        {selectedStory && (
+          <TaskGenerator
+            story={selectedStory}
+            isOpen={isTaskGeneratorOpen}
+            onClose={() => setIsTaskGeneratorOpen(false)}
+            onSaveTasks={handleSaveTasks}
+          />
+        )}
       </div>
     </DashboardLayout>
   );

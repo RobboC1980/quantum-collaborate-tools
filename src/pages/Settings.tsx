@@ -4,6 +4,7 @@ import DashboardLayout from "@/components/layout/DashboardLayout";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
+import { ModelSelector } from "@/components/ai/ModelSelector";
 
 const Settings = () => {
   return (
@@ -17,18 +18,39 @@ const Settings = () => {
           <Construction className="h-4 w-4 text-amber-500" />
           <AlertTitle className="text-amber-800">Under Construction</AlertTitle>
           <AlertDescription className="text-amber-700">
-            This page is currently under development. The settings functionality 
-            will be available in a future update.
+            Some settings are still under development and will be available in future updates.
           </AlertDescription>
         </Alert>
 
-        <Tabs defaultValue="account" className="w-full">
+        <Tabs defaultValue="ai" className="w-full">
           <TabsList className="mb-4">
+            <TabsTrigger value="ai">AI Models</TabsTrigger>
             <TabsTrigger value="account">Account</TabsTrigger>
             <TabsTrigger value="appearance">Appearance</TabsTrigger>
             <TabsTrigger value="notifications">Notifications</TabsTrigger>
             <TabsTrigger value="security">Security</TabsTrigger>
           </TabsList>
+
+          <TabsContent value="ai">
+            <div className="space-y-6">
+              <Card>
+                <CardHeader>
+                  <CardTitle>AI Model Configuration</CardTitle>
+                  <CardDescription>
+                    Choose which AI model to use for various features like story generation,
+                    task creation, and writing assistance.
+                  </CardDescription>
+                </CardHeader>
+                <CardContent>
+                  <ModelSelector 
+                    onModelChange={(provider, model) => {
+                      console.log(`Changed to ${provider} - ${model}`);
+                    }} 
+                  />
+                </CardContent>
+              </Card>
+            </div>
+          </TabsContent>
 
           <TabsContent value="account">
             <SettingsPlaceholder 

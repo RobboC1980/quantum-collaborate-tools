@@ -43,7 +43,7 @@ const Navbar = () => {
         {/* Logo */}
         <Link to="/" className="flex items-center">
           <span className="text-2xl font-bold bg-gradient-to-r from-quantum-700 to-quantum-500 bg-clip-text text-transparent">
-            QuantumScribe
+            QuantumScribe <span className="text-sm font-medium ml-1 text-gray-500">AI-powered</span>
           </span>
         </Link>
 

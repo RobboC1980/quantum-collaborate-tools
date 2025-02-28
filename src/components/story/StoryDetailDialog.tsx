@@ -31,10 +31,12 @@ import {
   ListChecks,
   Paperclip,
   Flag,
-  Hash
+  Hash,
+  Sparkles
 } from 'lucide-react';
 import { StoryWithRelations, StoryType, StoryStatus, StoryPriority, RiskLevel } from '@/types/story';
 import { User as UserType, mockUsers } from '@/types/user';
+import StoryGenerator from '@/components/ai/StoryGenerator';
 
 interface StoryDetailDialogProps {
   story?: StoryWithRelations;
@@ -135,6 +137,23 @@ const StoryDetailDialog: React.FC<StoryDetailDialogProps> = ({
   // For Fibonacci sequence in story points
   const fibonacciPoints = [0, 1, 2, 3, 5, 8, 13, 21];
 
+  // State for showing AI generator
+  const [showAiGenerator, setShowAiGenerator] = useState(false);
+
+  // Handle AI generation
+  const handleAiGeneration = (result: { title: string, description: string, outline: string[] }) => {
+    // Update form with AI-generated content
+    setFormData(prevState => ({
+      ...prevState,
+      title: result.title || prevState.title,
+      description: result.description,
+      acceptanceCriteria: [...prevState.acceptanceCriteria, ...result.outline]
+    }));
+
+    // Hide the AI generator
+    setShowAiGenerator(false);
+  };
+
   return (
     <Dialog open={isOpen} onOpenChange={(open) => !open && onClose()}>
       <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
@@ -157,6 +176,35 @@ const StoryDetailDialog: React.FC<StoryDetailDialogProps> = ({
           </TabsList>
           
           <TabsContent value="details" className="space-y-4 py-4">
+            {/* AI Generation Button */}
+            {isNewStory && !showAiGenerator && (
+              <Button 
+                variant="outline" 
+                className="w-full mb-4 border-dashed border-primary/50 flex gap-2 items-center"
+                onClick={() => setShowAiGenerator(true)}
+              >
+                <Sparkles className="h-4 w-4 text-primary" />
+                Use AI to Generate Story Details
+              </Button>
+            )}
+
+            {/* AI Story Generator */}
+            {isNewStory && showAiGenerator && (
+              <div className="mb-4">
+                <StoryGenerator 
+                  initialTitle={formData.title}
+                  onGenerate={handleAiGeneration} 
+                />
+                <Button 
+                  variant="ghost" 
+                  className="mt-2"
+                  onClick={() => setShowAiGenerator(false)}
+                >
+                  Cancel AI Generation
+                </Button>
+              </div>
+            )}
+
             <div className="grid grid-cols-1 gap-4">
               <div className="space-y-2">
                 <Label htmlFor="title">Title *</Label>

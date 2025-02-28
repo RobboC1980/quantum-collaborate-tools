@@ -35,11 +35,13 @@ import {
   Play,
   Pause,
   PlusCircle,
-  Trash2
+  Trash2,
+  Sparkles
 } from 'lucide-react';
 import { TaskWithRelations, TaskStatus, TaskPriority, Subtask } from '@/types/task';
 import { User as UserType, mockUsers } from '@/types/user';
 import { StoryWithRelations, mockStories } from '@/types/story';
+import WritingAssistant from '@/components/ai/WritingAssistant';
 
 interface TaskDetailDialogProps {
   task?: TaskWithRelations;
@@ -180,6 +182,15 @@ const TaskDetailDialog: React.FC<TaskDetailDialogProps> = ({
     setNewComment('');
   };
 
+  // State for showing AI writing assistant
+  const [showAiAssistant, setShowAiAssistant] = useState(false);
+
+  // Apply AI-generated content to description
+  const handleApplyAiContent = (content: string) => {
+    handleChange('description', content);
+    setShowAiAssistant(false);
+  };
+
   return (
     <Dialog open={isOpen} onOpenChange={(open) => !open && onClose()}>
       <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
@@ -202,6 +213,38 @@ const TaskDetailDialog: React.FC<TaskDetailDialogProps> = ({
           </TabsList>
           
           <TabsContent value="details" className="space-y-4 py-4">
+            {/* AI Assistant Button */}
+            {!showAiAssistant && (
+              <Button 
+                variant="outline" 
+                className="w-full mb-4 border-dashed border-primary/50 flex gap-2 items-center"
+                onClick={() => setShowAiAssistant(true)}
+              >
+                <Sparkles className="h-4 w-4 text-primary" />
+                Use AI Writing Assistant
+              </Button>
+            )}
+
+            {/* AI Writing Assistant */}
+            {showAiAssistant && (
+              <div className="mb-4">
+                <WritingAssistant 
+                  task={{
+                    title: formData.title || '',
+                    description: formData.description || ''
+                  }}
+                  onApplyContent={handleApplyAiContent} 
+                />
+                <Button 
+                  variant="ghost" 
+                  className="mt-2"
+                  onClick={() => setShowAiAssistant(false)}
+                >
+                  Close AI Assistant
+                </Button>
+              </div>
+            )}
+
             <div className="grid grid-cols-1 gap-4">
               <div className="space-y-2">
                 <Label htmlFor="title">Title *</Label>
