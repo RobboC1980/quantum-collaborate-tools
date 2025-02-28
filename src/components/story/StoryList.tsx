@@ -17,7 +17,7 @@ import {
 // Validation function to ensure non-empty string values
 const validateSelectValue = (value: string | undefined | null): string => {
   if (value === undefined || value === null || value === '') {
-    return 'unknown'; // Default fallback value
+    return 'all'; // Default fallback value
   }
   return value;
 };

@@ -59,7 +59,7 @@ const StoryManagement = () => {
       mountedRef.current = false;
       clearTimeout(timer);
     };
-  }, []); // Removed user and profile dependencies to prevent unnecessary rerenders
+  }, []); 
   
   useEffect(() => {
     if (mountedRef.current) {

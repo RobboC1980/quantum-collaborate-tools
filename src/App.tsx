@@ -71,6 +71,8 @@ function App() {
                   <AdminDashboard />
                 </ProtectedRoute>
               } />
+              
+              {/* Not yet implemented routes - redirect to NotFound */}
               <Route path="/dashboard/epics" element={
                 <ProtectedRoute>
                   <NotFound />

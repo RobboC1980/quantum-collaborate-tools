@@ -85,7 +85,7 @@ const StoryCard: React.FC<StoryCardProps> = ({ story, onClick }) => {
   const safeType = validateValue(story.type);
   const safeId = validateValue(story.id);
   const safePriority = validateValue(story.priority);
-  const safeEpicId = validateValue(story.epicId);
+  const safeEpicId = story.epicId ? validateValue(story.epicId) : null;
   const safeEpicName = story.epic?.name ? validateValue(story.epic.name) : 'Unknown Epic';
 
   console.log("Rendering story card for:", safeId);
@@ -140,7 +140,7 @@ const StoryCard: React.FC<StoryCardProps> = ({ story, onClick }) => {
             {story.points}
           </Badge>
           
-          {story.epicId && (
+          {safeEpicId && (
             <div className="flex items-center text-xs text-muted-foreground">
               <Layers className="h-3 w-3 mr-1" />
               {story.epic ? safeEpicName : safeEpicId}
