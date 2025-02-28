@@ -25,7 +25,7 @@ export function useFetch<T>(
 ) {
   return useQuery<ApiResponse<T>, Error>({
     queryKey,
-    queryFn: () => apiClient.fetch<T>(tableName as any, options?.apiOptions),
+    queryFn: () => apiClient.fetch<T>(tableName, options?.apiOptions),
     ...options?.queryOptions,
     // Wrap the success callback in meta to follow TanStack Query v5 pattern
     meta: {
@@ -57,7 +57,7 @@ export function useCreate<T>(
   tableName: string,
   options?: {
     apiOptions?: Parameters<typeof apiClient.create>[2],
-    mutationOptions?: Omit<UseMutationOptions<ApiResponse<T>, Error, Partial<T>>, 'mutationFn'>,
+    mutationOptions?: Omit<UseMutationOptions<ApiResponse<T>, Error, Record<string, any>>, 'mutationFn'>,
     invalidateQueries?: QueryKey[],
     successMessage?: string,
   }
@@ -65,10 +65,10 @@ export function useCreate<T>(
   const queryClient = useQueryClient();
   const [isLoading, setIsLoading] = useState(false);
   
-  const mutation = useMutation<ApiResponse<T>, Error, Partial<T>>({
-    mutationFn: (data: Partial<T>) => {
+  const mutation = useMutation<ApiResponse<T>, Error, Record<string, any>>({
+    mutationFn: (data: Record<string, any>) => {
       setIsLoading(true);
-      return apiClient.create<T>(tableName as any, data, options?.apiOptions);
+      return apiClient.create<T>(tableName, data, options?.apiOptions);
     },
     ...options?.mutationOptions,
     onSuccess: (data, variables, context) => {
@@ -110,7 +110,7 @@ export function useUpdate<T>(
     mutationOptions?: Omit<UseMutationOptions<
       ApiResponse<T>, 
       Error, 
-      { id: string | number; data: Partial<T> }
+      { id: string | number; data: Record<string, any> }
     >, 'mutationFn'>,
     invalidateQueries?: QueryKey[],
     successMessage?: string,
@@ -122,11 +122,11 @@ export function useUpdate<T>(
   const mutation = useMutation<
     ApiResponse<T>, 
     Error, 
-    { id: string | number; data: Partial<T> }
+    { id: string | number; data: Record<string, any> }
   >({
-    mutationFn: ({ id, data }: { id: string | number; data: Partial<T> }) => {
+    mutationFn: ({ id, data }: { id: string | number; data: Record<string, any> }) => {
       setIsLoading(true);
-      return apiClient.update<T>(tableName as any, id, data, options?.apiOptions);
+      return apiClient.update<T>(tableName, id, data, options?.apiOptions);
     },
     ...options?.mutationOptions,
     onSuccess: (data, variables, context) => {
@@ -180,7 +180,7 @@ export function useDelete<T>(
   const mutation = useMutation<ApiResponse<T>, Error, string | number>({
     mutationFn: (id: string | number) => {
       setIsLoading(true);
-      return apiClient.delete<T>(tableName as any, id, options?.apiOptions);
+      return apiClient.delete<T>(tableName, id, options?.apiOptions);
     },
     ...options?.mutationOptions,
     onSuccess: (data, variables, context) => {
