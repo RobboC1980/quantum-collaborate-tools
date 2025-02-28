@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { 
   Dialog, 
@@ -68,7 +67,9 @@ const StoryDetailDialog: React.FC<StoryDetailDialogProps> = ({
       riskLevel: 'low' as RiskLevel,
       childStoryIds: [],
       dependencies: [],
-      assigneeId: '',
+      assigneeId: 'unassigned',
+      epicId: 'none',
+      sprintId: 'none',
       reporterId: mockUsers[0].id, // Default to first user for now
     }
   );
@@ -269,14 +270,14 @@ const StoryDetailDialog: React.FC<StoryDetailDialogProps> = ({
                 <div className="space-y-2">
                   <Label htmlFor="assignee">Assignee</Label>
                   <Select 
-                    value={formData.assigneeId || ''} 
+                    value={formData.assigneeId || 'unassigned'} 
                     onValueChange={(value) => handleChange('assigneeId', value)}
                   >
                     <SelectTrigger>
                       <SelectValue placeholder="Assign to..." />
                     </SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="">Unassigned</SelectItem>
+                      <SelectItem value="unassigned">Unassigned</SelectItem>
                       {mockUsers.map(user => (
                         <SelectItem key={user.id} value={user.id}>
                           {user.fullName}
@@ -373,14 +374,14 @@ const StoryDetailDialog: React.FC<StoryDetailDialogProps> = ({
                 <div className="space-y-2">
                   <Label htmlFor="epic">Epic</Label>
                   <Select 
-                    value={formData.epicId || ''} 
+                    value={formData.epicId || 'none'} 
                     onValueChange={(value) => handleChange('epicId', value)}
                   >
                     <SelectTrigger>
                       <SelectValue placeholder="Select epic" />
                     </SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="">None</SelectItem>
+                      <SelectItem value="none">None</SelectItem>
                       <SelectItem value="EP-01">User Authentication & Authorization</SelectItem>
                       <SelectItem value="EP-02">Dashboard Experience</SelectItem>
                       <SelectItem value="EP-03">Platform Performance Optimization</SelectItem>
@@ -391,14 +392,14 @@ const StoryDetailDialog: React.FC<StoryDetailDialogProps> = ({
                 <div className="space-y-2">
                   <Label htmlFor="sprint">Sprint</Label>
                   <Select 
-                    value={formData.sprintId || ''} 
+                    value={formData.sprintId || 'none'} 
                     onValueChange={(value) => handleChange('sprintId', value)}
                   >
                     <SelectTrigger>
                       <SelectValue placeholder="Select sprint" />
                     </SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="">None</SelectItem>
+                      <SelectItem value="none">None</SelectItem>
                       <SelectItem value="1">Sprint 23</SelectItem>
                       <SelectItem value="2">Sprint 24</SelectItem>
                       <SelectItem value="3">Sprint 22</SelectItem>
