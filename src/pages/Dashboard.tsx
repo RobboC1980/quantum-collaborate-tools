@@ -15,7 +15,8 @@ import {
   ArrowRight,
   FileText,
   CheckSquare,
-  Layers
+  Layers,
+  Briefcase
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -25,20 +26,34 @@ import { mockStories } from '@/types/story';
 import { mockTasks } from '@/types/task';
 import { useAuth } from '@/contexts/AuthContext';
 import { useUIInjection } from '@/hooks/useUIInjection';
+import ROUTES from '@/constants/routes';
 
 const Dashboard = () => {
+  console.log("Dashboard component rendering");
+  
   const navigate = useNavigate();
-  const { user } = useAuth();
+  const { user, profile, isLoading: authLoading } = useAuth();
   const [isLoading, setIsLoading] = useState(true);
   const uiInjection = useUIInjection();
   
+  console.log("Dashboard auth state:", { 
+    user: user ? `User ID: ${user.id}` : "No user", 
+    profile: profile ? `Profile: ${profile.full_name}` : "No profile",
+    authLoading
+  });
+  
   useEffect(() => {
+    console.log("Dashboard useEffect running");
     // Simulate loading data
     const timer = setTimeout(() => {
+      console.log("Dashboard data loaded");
       setIsLoading(false);
     }, 300);
     
-    return () => clearTimeout(timer);
+    return () => {
+      console.log("Dashboard useEffect cleanup");
+      clearTimeout(timer);
+    };
   }, []);
   
   // Mock data for dashboard
@@ -48,96 +63,204 @@ const Dashboard = () => {
     completedStories: 287,
     teamMembers: 16
   };
-
-  const mockSprints = [
+  
+  // Upcoming sprints
+  const upcomingSprints = [
     {
       id: 1,
       name: 'Sprint 23',
-      startDate: '2024-05-15',
-      endDate: '2024-05-28',
+      startDate: new Date('2024-05-15'),
+      endDate: new Date('2024-05-28'),
       status: 'active',
       progress: 68,
       totalStories: 24,
-      completedStories: 16,
+      completedStories: 16
     },
     {
       id: 2,
       name: 'Sprint 24',
-      startDate: '2024-05-29',
-      endDate: '2024-06-11',
+      startDate: new Date('2024-05-29'),
+      endDate: new Date('2024-06-11'),
       status: 'planned',
       progress: 0,
       totalStories: 18,
-      completedStories: 0,
-    },
-    {
-      id: 3,
-      name: 'Sprint 22',
-      startDate: '2024-05-01',
-      endDate: '2024-05-14',
-      status: 'completed',
-      progress: 100,
-      totalStories: 20,
-      completedStories: 20,
+      completedStories: 0
     }
   ];
-
-  // Mock data for upcoming deadlines
+  
+  // Upcoming deadlines
   const upcomingDeadlines = [
-    { id: 1, title: 'Sprint 23 Demo', date: 'May 28, 2024', type: 'sprint' },
-    { id: 2, title: 'Epic: User Authentication', date: 'June 10, 2024', type: 'epic' },
-    { id: 3, title: 'Quarterly Planning', date: 'June 15, 2024', type: 'meeting' },
+    {
+      id: 'deadline-1',
+      title: 'Complete API Integration',
+      dueDate: new Date('2024-05-25'),
+      type: 'story',
+      priority: 'high'
+    },
+    {
+      id: 'deadline-2',
+      title: 'User Testing Session',
+      dueDate: new Date('2024-05-27'),
+      type: 'milestone',
+      priority: 'medium'
+    },
+    {
+      id: 'deadline-3',
+      title: 'Sprint 23 Demo',
+      dueDate: new Date('2024-05-28'),
+      type: 'event',
+      priority: 'medium'
+    },
+    {
+      id: 'deadline-4',
+      title: 'Release v1.2.0',
+      dueDate: new Date('2024-06-05'),
+      type: 'milestone',
+      priority: 'critical'
+    }
   ];
-
-  // Mock data for recent activities
-  const recentActivities = [
-    { id: 1, user: 'Alice Cooper', action: 'completed', item: 'User profile page redesign', time: '2 hours ago' },
-    { id: 2, user: 'Bob Johnson', action: 'created', item: 'Bug fix: Login validation', time: '4 hours ago' },
-    { id: 3, user: 'Charlie Brown', action: 'updated', item: 'Sprint 23 capacity', time: '5 hours ago' },
-    { id: 4, user: 'Diana Ross', action: 'commented on', item: 'API integration story', time: '6 hours ago' },
-    { id: 5, user: 'Edward Norton', action: 'moved', item: 'Dashboard widgets to In Review', time: '8 hours ago' },
+  
+  // Recent activity
+  const recentActivity = [
+    {
+      id: 'activity-1',
+      user: {
+        name: 'Alex Johnson',
+        avatar: 'https://api.dicebear.com/7.x/avataaars/svg?seed=Alex'
+      },
+      action: 'completed',
+      item: {
+        type: 'task',
+        title: 'Implement user authentication'
+      },
+      timestamp: new Date('2024-05-22T14:32:00')
+    },
+    {
+      id: 'activity-2',
+      user: {
+        name: 'Sarah Chen',
+        avatar: 'https://api.dicebear.com/7.x/avataaars/svg?seed=Sarah'
+      },
+      action: 'created',
+      item: {
+        type: 'story',
+        title: 'User profile settings'
+      },
+      timestamp: new Date('2024-05-22T11:15:00')
+    },
+    {
+      id: 'activity-3',
+      user: {
+        name: 'Michael Rodriguez',
+        avatar: 'https://api.dicebear.com/7.x/avataaars/svg?seed=Michael'
+      },
+      action: 'updated',
+      item: {
+        type: 'epic',
+        title: 'User Management'
+      },
+      timestamp: new Date('2024-05-21T16:45:00')
+    },
+    {
+      id: 'activity-4',
+      user: {
+        name: 'Emily Taylor',
+        avatar: 'https://api.dicebear.com/7.x/avataaars/svg?seed=Emily'
+      },
+      action: 'commented',
+      item: {
+        type: 'story',
+        title: 'Dashboard analytics'
+      },
+      timestamp: new Date('2024-05-21T10:20:00')
+    }
   ];
-
-  // Get the current active sprint
-  const activeSprint = mockSprints.find(sprint => sprint.status === 'active');
-
-  const navigateToSprint = (sprintId: number) => {
-    navigate(`/dashboard/sprints?id=${sprintId}`);
+  
+  // Format date for display
+  const formatDate = (date: Date) => {
+    return date.toLocaleDateString('en-US', {
+      month: 'short',
+      day: 'numeric'
+    });
   };
   
-  const handleCreateStory = () => {
-    navigate('/dashboard/stories');
+  // Calculate time ago for activity
+  const timeAgo = (date: Date) => {
+    const seconds = Math.floor((new Date().getTime() - date.getTime()) / 1000);
+    
+    let interval = seconds / 31536000;
+    if (interval > 1) return Math.floor(interval) + ' years ago';
+    
+    interval = seconds / 2592000;
+    if (interval > 1) return Math.floor(interval) + ' months ago';
+    
+    interval = seconds / 86400;
+    if (interval > 1) return Math.floor(interval) + ' days ago';
+    
+    interval = seconds / 3600;
+    if (interval > 1) return Math.floor(interval) + ' hours ago';
+    
+    interval = seconds / 60;
+    if (interval > 1) return Math.floor(interval) + ' minutes ago';
+    
+    return Math.floor(seconds) + ' seconds ago';
   };
   
-  const handleEditStory = (story: any) => {
-    navigate(`/dashboard/stories?id=${story.id}`);
+  // Get priority badge color
+  const getPriorityColor = (priority: string) => {
+    switch (priority) {
+      case 'low':
+        return 'bg-blue-100 text-blue-800';
+      case 'medium':
+        return 'bg-yellow-100 text-yellow-800';
+      case 'high':
+        return 'bg-orange-100 text-orange-800';
+      case 'critical':
+        return 'bg-red-100 text-red-800';
+      default:
+        return 'bg-gray-100 text-gray-800';
+    }
   };
   
-  const handleCreateTask = () => {
-    navigate('/dashboard/tasks');
+  // Get item type icon
+  const getItemTypeIcon = (type: string) => {
+    switch (type) {
+      case 'story':
+        return <FileText className="h-3.5 w-3.5" />;
+      case 'task':
+        return <CheckSquare className="h-3.5 w-3.5" />;
+      case 'epic':
+        return <Layers className="h-3.5 w-3.5" />;
+      default:
+        return <Activity className="h-3.5 w-3.5" />;
+    }
   };
-
-  if (isLoading) {
+  
+  if (isLoading || authLoading) {
+    console.log("Dashboard is in loading state", { isLoading, authLoading });
     return (
       <DashboardLayout>
-        <div className="flex items-center justify-center h-[80vh]">
+        <div className="h-full flex items-center justify-center">
           <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-quantum-600"></div>
         </div>
       </DashboardLayout>
     );
   }
-
+  
+  console.log("Dashboard rendering content");
+  
   return (
     <DashboardLayout>
-      <div className="flex flex-col gap-6">
+      <div className="space-y-6">
         <div className="flex items-center justify-between">
           <h1 className="text-2xl font-bold tracking-tight">Dashboard</h1>
           <div className="flex items-center gap-2">
-            <CalendarDays size={16} className="text-muted-foreground" />
-            <span className="text-sm text-muted-foreground">{new Date().toLocaleDateString('en-US', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })}</span>
+            <span className="text-sm text-muted-foreground">
+              Welcome back, {profile?.full_name || 'User'}
+            </span>
           </div>
         </div>
-
+        
         {/* Overview Cards */}
         <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
           <Card>
@@ -216,13 +339,36 @@ const Dashboard = () => {
 
         {/* Project Management Quick Links */}
         <div className="grid gap-4 grid-cols-1 md:grid-cols-2 lg:grid-cols-4">
+          <Card className="hover:shadow-md transition-shadow">
+            <CardContent className="p-6">
+              <div className="flex items-center justify-between mb-4">
+                <div className="flex items-center space-x-2">
+                  <Briefcase className="h-5 w-5 text-quantum-600" />
+                  <h3 className="font-medium">Projects</h3>
+                </div>
+                <Button 
+                  variant="ghost" 
+                  size="icon" 
+                  className="h-8 w-8"
+                  onClick={() => navigate(ROUTES.DASHBOARD.PROJECTS)}
+                >
+                  <ArrowRight size={16} />
+                </Button>
+              </div>
+              <p className="text-sm text-muted-foreground mb-4">Manage your projects and teams</p>
+              <div className="text-xs bg-blue-500 text-white px-2 py-1 rounded-full">
+                {projectStats.activeProjects} Active
+              </div>
+            </CardContent>
+          </Card>
+
           <Card className="bg-blue-50 border-blue-200 hover:bg-blue-100 transition-colors cursor-pointer" onClick={() => navigate('/dashboard/sprints')}>
             <CardContent className="p-6 flex flex-col items-center text-center">
               <CalendarDays className="h-10 w-10 mb-3 text-blue-600" />
               <h3 className="font-medium text-lg">Sprints</h3>
               <p className="text-sm text-muted-foreground mb-4">Manage sprint planning and execution</p>
               <div className="text-xs bg-blue-500 text-white px-2 py-1 rounded-full">
-                {mockSprints.filter(s => s.status === 'active').length} Active
+                {upcomingSprints.filter(s => s.status === 'active').length} Active
               </div>
             </CardContent>
           </Card>
@@ -282,11 +428,11 @@ const Dashboard = () => {
               </div>
               
               <div className="grid gap-4 grid-cols-1 md:grid-cols-2 lg:grid-cols-3">
-                {mockSprints.map(sprint => (
+                {upcomingSprints.map(sprint => (
                   <SprintSummaryCard 
                     key={sprint.id} 
                     sprint={sprint} 
-                    onClick={() => navigateToSprint(sprint.id)}
+                    onClick={() => navigate(`/dashboard/sprints?id=${sprint.id}`)}
                   />
                 ))}
               </div>
@@ -319,7 +465,7 @@ const Dashboard = () => {
                         </div>
                         <div>
                           <p className="text-sm font-medium">{deadline.title}</p>
-                          <p className="text-xs text-muted-foreground">{deadline.date}</p>
+                          <p className="text-xs text-muted-foreground">{deadline.dueDate.toLocaleDateString('en-US', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })}</p>
                         </div>
                       </div>
                     ))}
@@ -371,7 +517,7 @@ const Dashboard = () => {
                           variant="ghost" 
                           size="sm" 
                           className="h-7 w-7 p-0"
-                          onClick={() => handleEditStory(story)}
+                          onClick={() => navigate(`/dashboard/stories?id=${story.id}`)}
                         >
                           <ArrowRight size={14} />
                         </Button>
@@ -381,7 +527,7 @@ const Dashboard = () => {
                       variant="outline" 
                       size="sm" 
                       className="w-full mt-2"
-                      onClick={handleCreateStory}
+                      onClick={() => navigate('/dashboard/stories')}
                     >
                       <PlusCircle size={14} className="mr-1" />
                       Create New Story
@@ -406,18 +552,18 @@ const Dashboard = () => {
               </CardHeader>
               <CardContent>
                 <div className="space-y-4">
-                  {recentActivities.map((activity) => (
+                  {recentActivity.map((activity) => (
                     <div key={activity.id} className="flex items-start space-x-4 border-b border-border pb-4 last:border-0 last:pb-0">
                       <div className="w-8 h-8 rounded-full bg-quantum-100 flex items-center justify-center text-quantum-700 flex-shrink-0">
-                        {activity.user.charAt(0)}
+                        <img src={activity.user.avatar} alt={activity.user.name} className="h-8 w-8 rounded-full" />
                       </div>
                       <div>
                         <p className="text-sm">
-                          <span className="font-medium">{activity.user}</span>
+                          <span className="font-medium">{activity.user.name}</span>
                           <span className="text-muted-foreground"> {activity.action} </span>
-                          <span className="font-medium">{activity.item}</span>
+                          <span className="font-medium">{activity.item.title}</span>
                         </p>
-                        <p className="text-xs text-muted-foreground">{activity.time}</p>
+                        <p className="text-xs text-muted-foreground">{timeAgo(activity.timestamp)}</p>
                       </div>
                     </div>
                   ))}
@@ -429,15 +575,15 @@ const Dashboard = () => {
           <TabsContent value="stories">
             <div className="mb-4 flex justify-between items-center">
               <h2 className="text-lg font-medium">My Stories</h2>
-              <Button onClick={handleCreateStory}>
+              <Button onClick={() => navigate('/dashboard/stories')}>
                 <PlusCircle size={16} className="mr-2" />
                 Create Story
               </Button>
             </div>
             <StoryList 
               stories={mockStories.filter(story => story.assigneeId === 'user-123')} 
-              onCreateStory={handleCreateStory}
-              onSelectStory={handleEditStory}
+              onCreateStory={() => navigate('/dashboard/stories')}
+              onSelectStory={(story) => navigate(`/dashboard/stories?id=${story.id}`)}
             />
           </TabsContent>
           
@@ -460,7 +606,7 @@ const Dashboard = () => {
           <TabsContent value="tasks">
             <div className="mb-4 flex justify-between items-center">
               <h2 className="text-lg font-medium">My Tasks</h2>
-              <Button onClick={handleCreateTask}>
+              <Button onClick={() => navigate('/dashboard/tasks')}>
                 <PlusCircle size={16} className="mr-2" />
                 Create Task
               </Button>
@@ -473,7 +619,7 @@ const Dashboard = () => {
                       <div className="flex-1">
                         <div className="flex items-center gap-2">
                           <span className="text-xs font-mono text-muted-foreground">{task.id}</span>
-                          <Badge className={task.priority === 'high' ? 'bg-red-100 text-red-800' : 'bg-blue-100 text-blue-800'}>
+                          <Badge className={getPriorityColor(task.priority)}>
                             {task.priority}
                           </Badge>
                         </div>

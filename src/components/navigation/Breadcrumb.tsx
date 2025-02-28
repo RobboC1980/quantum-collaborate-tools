@@ -69,6 +69,7 @@ function generateBreadcrumbItems(path: string): { label: string; href: string }[
   // Map path segments to readable labels
   const pathSegmentLabels: Record<string, string> = {
     'dashboard': 'Dashboard',
+    'projects': 'Projects',
     'sprints': 'Sprints',
     'stories': 'Stories',
     'tasks': 'Tasks',
@@ -78,7 +79,6 @@ function generateBreadcrumbItems(path: string): { label: string; href: string }[
     'settings': 'Settings',
     'admin': 'Admin',
     'users': 'Users',
-    'projects': 'Projects',
   };
   
   // Generate breadcrumb items

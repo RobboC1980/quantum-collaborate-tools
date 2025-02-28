@@ -18,6 +18,7 @@ import TaskManagement from './pages/TaskManagement';
 import AdminDashboard from './pages/AdminDashboard';
 import NotFound from './pages/NotFound';
 import EpicManagement from './pages/EpicManagement';
+import ProjectManagement from './pages/ProjectManagement';
 
 // Create a client with more robust settings
 const queryClient = new QueryClient({
@@ -69,6 +70,16 @@ function App() {
                     <TaskManagement />
                   </ProtectedRoute>
                 } />
+                <Route path={ROUTES.DASHBOARD.EPICS} element={
+                  <ProtectedRoute>
+                    <EpicManagement />
+                  </ProtectedRoute>
+                } />
+                <Route path={ROUTES.DASHBOARD.PROJECTS} element={
+                  <ProtectedRoute>
+                    <ProjectManagement />
+                  </ProtectedRoute>
+                } />
                 
                 {/* Admin Routes */}
                 <Route path={ROUTES.ADMIN.HOME} element={
@@ -76,9 +87,11 @@ function App() {
                     <AdminDashboard />
                   </ProtectedRoute>
                 } />
-                
-                {/* Implemented routes */}
-                <Route path={ROUTES.DASHBOARD.EPICS} element={<EpicManagement />} />
+                <Route path={ROUTES.ADMIN.PROJECTS} element={
+                  <ProtectedRoute adminOnly>
+                    <ProjectManagement />
+                  </ProtectedRoute>
+                } />
                 
                 {/* Not yet implemented routes - redirect to NotFound */}
                 <Route path={ROUTES.DASHBOARD.TEAM} element={

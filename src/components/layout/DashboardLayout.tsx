@@ -1,4 +1,3 @@
-
 import React from 'react';
 import { useNavigate, useLocation, Link } from 'react-router-dom';
 import Navbar from './Navbar';
@@ -15,6 +14,7 @@ import {
   CheckSquare,
   Layers,
   LogOut,
+  Briefcase,
 } from 'lucide-react';
 import Breadcrumb from '@/components/navigation/Breadcrumb';
 import ErrorBoundary from '@/components/ui/error-boundary';
@@ -33,6 +33,7 @@ const DashboardLayout: React.FC<DashboardLayoutProps> = ({ children }) => {
   
   const navItems = [
     { label: 'Dashboard', icon: <Home size={18} />, path: ROUTES.DASHBOARD.HOME },
+    { label: 'Projects', icon: <Briefcase size={18} />, path: ROUTES.DASHBOARD.PROJECTS },
     { label: 'Sprints', icon: <Calendar size={18} />, path: ROUTES.DASHBOARD.SPRINTS },
     { label: 'Stories', icon: <FileText size={18} />, path: ROUTES.DASHBOARD.STORIES },
     { label: 'Tasks', icon: <CheckSquare size={18} />, path: ROUTES.DASHBOARD.TASKS },

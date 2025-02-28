@@ -1,4 +1,3 @@
-
 /**
  * Application route definitions
  * 
@@ -18,6 +17,7 @@ export const AUTH_ROUTES = {
 // Dashboard routes
 export const DASHBOARD_ROUTES = {
   HOME: '/dashboard',
+  PROJECTS: '/dashboard/projects',
   SPRINTS: '/dashboard/sprints',
   STORIES: '/dashboard/stories',
   TASKS: '/dashboard/tasks',
