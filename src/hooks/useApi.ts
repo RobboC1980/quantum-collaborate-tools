@@ -39,19 +39,24 @@ export function useFetch<T = any>(
     queryKey,
     queryFn: () => apiClient.fetch<T>(tableName, options?.apiOptions),
     ...options?.queryOptions,
-    onSuccess: (data) => {
-      if (options?.successMessage && data.data) {
+    meta: {
+      ...(options?.queryOptions?.meta || {}),
+      successMessage: options?.successMessage,
+    },
+    onSettled: (data, error) => {
+      // Handle success message
+      if (!error && data?.data && options?.successMessage) {
         toast({
           title: 'Success',
           description: options.successMessage,
         });
       }
       
-      // Call the original onSuccess if provided
-      if (options?.queryOptions?.onSuccess) {
-        options.queryOptions.onSuccess(data);
+      // Call the original onSettled if it exists
+      if (options?.queryOptions?.onSettled) {
+        options.queryOptions.onSettled(data, error);
       }
-    },
+    }
   });
 }
 

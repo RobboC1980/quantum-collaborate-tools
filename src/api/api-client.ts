@@ -96,15 +96,18 @@ const apiClient = {
       }
       
       // Execute query
-      const response = options?.single 
-        ? await query.single() 
-        : await query;
-        
-      if (response.error) {
-        throw response.error;
+      let result;
+      if (options?.single) {
+        result = await query.single();
+      } else {
+        result = await query;
       }
       
-      return { data: response.data as T, error: null };
+      if (result.error) {
+        throw result.error;
+      }
+      
+      return { data: result.data as T, error: null };
     } catch (error) {
       const apiError = handleApiError(error, `Failed to fetch data from ${tableName}`);
       return { data: null, error: apiError };
@@ -122,6 +125,7 @@ const apiClient = {
     }
   ): Promise<ApiResponse<T>> {
     try {
+      // Start with basic insert
       let query = supabase.from(tableName).insert(data);
       
       // Handle returning fields if specified
@@ -130,14 +134,15 @@ const apiClient = {
       }
       
       // Execute the query
-      const response = await query;
+      const result = await query;
       
-      if (response.error) {
-        throw response.error;
+      if (result.error) {
+        throw result.error;
       }
       
+      const returnData = result.data as unknown as T[];
       return { 
-        data: (response.data && response.data.length > 0) ? (response.data[0] as T) : null, 
+        data: returnData && returnData.length > 0 ? returnData[0] : null, 
         error: null 
       };
     } catch (error) {
@@ -160,30 +165,36 @@ const apiClient = {
     }
   ): Promise<ApiResponse<T>> {
     try {
-      let query;
+      // Initialize the query
+      const baseQuery = supabase.from(tableName).update(data);
       
-      // Use match object or id for filtering
+      // Apply conditions
+      let conditionedQuery;
       if (options?.match) {
-        query = supabase.from(tableName).update(data).match(options.match);
+        conditionedQuery = baseQuery.match(options.match);
       } else {
         const idColumn = options?.idColumn || 'id';
-        query = supabase.from(tableName).update(data).eq(idColumn, id);
+        conditionedQuery = baseQuery.eq(idColumn, id);
       }
       
       // Handle returning fields if specified
+      let finalQuery;
       if (options?.returning) {
-        query = query.select(options.returning);
+        finalQuery = conditionedQuery.select(options.returning);
+      } else {
+        finalQuery = conditionedQuery;
       }
       
       // Execute the query
-      const response = await query;
+      const result = await finalQuery;
       
-      if (response.error) {
-        throw response.error;
+      if (result.error) {
+        throw result.error;
       }
       
+      const returnData = result.data as unknown as T[];
       return { 
-        data: (response.data && response.data.length > 0) ? (response.data[0] as T) : null, 
+        data: returnData && returnData.length > 0 ? returnData[0] : null, 
         error: null 
       };
     } catch (error) {
@@ -205,34 +216,40 @@ const apiClient = {
     }
   ): Promise<ApiResponse<T>> {
     try {
-      let query;
+      // Initialize the delete query
+      const baseQuery = supabase.from(tableName).delete();
       
-      // Use match object or id for filtering
+      // Apply conditions
+      let conditionedQuery;
       if (options?.match) {
-        query = supabase.from(tableName).delete().match(options.match);
+        conditionedQuery = baseQuery.match(options.match);
       } else {
         const idColumn = options?.idColumn || 'id';
-        query = supabase.from(tableName).delete().eq(idColumn, id);
+        conditionedQuery = baseQuery.eq(idColumn, id);
       }
       
       // Handle returning fields if specified
+      let finalQuery;
       if (options?.returning) {
-        query = query.select(options.returning);
+        finalQuery = conditionedQuery.select(options.returning);
+      } else {
+        finalQuery = conditionedQuery;
       }
       
       // Execute the query
-      const response = await query;
+      const result = await finalQuery;
       
-      if (response.error) {
-        throw response.error;
+      if (result.error) {
+        throw result.error;
       }
       
+      const returnData = result.data as unknown as T[];
       return { 
-        data: (response.data && response.data.length > 0) ? (response.data[0] as T) : null, 
+        data: returnData && returnData.length > 0 ? returnData[0] : null, 
         error: null 
       };
     } catch (error) {
-      const apiError = handleApiError(error, `Failed to delete data in ${tableName}`);
+      const apiError = handleApiError(error, `Failed to delete data from ${tableName}`);
       return { data: null, error: apiError };
     }
   },
