@@ -1,6 +1,7 @@
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from '@/components/ui/use-toast';
 import { PostgrestFilterBuilder } from '@supabase/postgrest-js';
+import { PostgrestQueryBuilder } from '@supabase/postgrest-js';
 
 // Types for API responses and error handling
 export interface ApiResponse<T> {
@@ -180,14 +181,17 @@ const apiClient = {
       // Apply conditions
       let conditionedQuery;
       if (options?.match) {
+        // @ts-ignore - Bypass excessive type instantiation error
         conditionedQuery = baseQuery.match(options.match);
       } else {
         const idColumn = options?.idColumn || 'id';
+        // @ts-ignore - Bypass excessive type instantiation error
         conditionedQuery = baseQuery.eq(idColumn, id);
       }
       
       // Handle returning fields if specified
       if (options?.returning) {
+        // @ts-ignore - Bypass excessive type instantiation error
         const result = await conditionedQuery.select(options.returning);
         
         if (result.error) {
@@ -199,6 +203,7 @@ const apiClient = {
           error: null
         };
       } else {
+        // @ts-ignore - Bypass excessive type instantiation error
         const result = await conditionedQuery;
         
         if (result.error) {
@@ -235,14 +240,17 @@ const apiClient = {
       // Apply conditions
       let conditionedQuery;
       if (options?.match) {
+        // @ts-ignore - Bypass excessive type instantiation error
         conditionedQuery = baseQuery.match(options.match);
       } else {
         const idColumn = options?.idColumn || 'id';
+        // @ts-ignore - Bypass excessive type instantiation error
         conditionedQuery = baseQuery.eq(idColumn, id);
       }
       
       // Handle returning fields if specified
       if (options?.returning) {
+        // @ts-ignore - Bypass excessive type instantiation error
         const result = await conditionedQuery.select(options.returning);
         
         if (result.error) {
@@ -254,6 +262,7 @@ const apiClient = {
           error: null
         };
       } else {
+        // @ts-ignore - Bypass excessive type instantiation error
         const result = await conditionedQuery;
         
         if (result.error) {
