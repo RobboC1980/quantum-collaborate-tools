@@ -19,23 +19,34 @@ export function useFetch<T>(
   tableName: string,
   options?: {
     apiOptions?: Parameters<typeof apiClient.fetch>[1],
-    queryOptions?: Omit<UseQueryOptions<ApiResponse<T>>, 'queryKey' | 'queryFn'>,
+    queryOptions?: Omit<UseQueryOptions<ApiResponse<T>, Error, ApiResponse<T>, QueryKey>, 'queryKey' | 'queryFn'>,
     successMessage?: string,
   }
 ) {
-  return useQuery({
+  return useQuery<ApiResponse<T>, Error>({
     queryKey,
-    queryFn: () => apiClient.fetch<T>(tableName, options?.apiOptions),
+    queryFn: () => apiClient.fetch<T>(tableName as any, options?.apiOptions),
     ...options?.queryOptions,
-    onSuccess: (data) => {
-      if (options?.successMessage && data.data) {
-        toast({
-          title: 'Success',
-          description: options.successMessage,
-        });
+    // Wrap the success callback in meta to follow TanStack Query v5 pattern
+    meta: {
+      ...(options?.queryOptions?.meta || {}),
+      onSuccess: (data: ApiResponse<T>) => {
+        if (options?.successMessage && data.data) {
+          toast({
+            title: 'Success',
+            description: options.successMessage,
+          });
+        }
+        
+        // Call the original onSuccess if provided
+        if (options?.queryOptions?.meta?.onSuccess) {
+          // Type assertion to handle the function properly
+          const onSuccess = options?.queryOptions?.meta?.onSuccess as unknown as 
+            (data: ApiResponse<T>) => void;
+          onSuccess(data);
+        }
       }
-      options?.queryOptions?.onSuccess?.(data);
-    },
+    }
   });
 }
 
@@ -54,10 +65,10 @@ export function useCreate<T>(
   const queryClient = useQueryClient();
   const [isLoading, setIsLoading] = useState(false);
   
-  const mutation = useMutation({
+  const mutation = useMutation<ApiResponse<T>, Error, Partial<T>>({
     mutationFn: (data: Partial<T>) => {
       setIsLoading(true);
-      return apiClient.create<T>(tableName, data, options?.apiOptions);
+      return apiClient.create<T>(tableName as any, data, options?.apiOptions);
     },
     ...options?.mutationOptions,
     onSuccess: (data, variables, context) => {
@@ -108,10 +119,14 @@ export function useUpdate<T>(
   const queryClient = useQueryClient();
   const [isLoading, setIsLoading] = useState(false);
   
-  const mutation = useMutation({
+  const mutation = useMutation<
+    ApiResponse<T>, 
+    Error, 
+    { id: string | number; data: Partial<T> }
+  >({
     mutationFn: ({ id, data }: { id: string | number; data: Partial<T> }) => {
       setIsLoading(true);
-      return apiClient.update<T>(tableName, id, data, options?.apiOptions);
+      return apiClient.update<T>(tableName as any, id, data, options?.apiOptions);
     },
     ...options?.mutationOptions,
     onSuccess: (data, variables, context) => {
@@ -162,10 +177,10 @@ export function useDelete<T>(
   const queryClient = useQueryClient();
   const [isLoading, setIsLoading] = useState(false);
   
-  const mutation = useMutation({
+  const mutation = useMutation<ApiResponse<T>, Error, string | number>({
     mutationFn: (id: string | number) => {
       setIsLoading(true);
-      return apiClient.delete<T>(tableName, id, options?.apiOptions);
+      return apiClient.delete<T>(tableName as any, id, options?.apiOptions);
     },
     ...options?.mutationOptions,
     onSuccess: (data, variables, context) => {
@@ -211,7 +226,7 @@ export function useExecuteFunction<T, P = any>(
   const queryClient = useQueryClient();
   const [isLoading, setIsLoading] = useState(false);
   
-  const mutation = useMutation({
+  const mutation = useMutation<ApiResponse<T>, Error, P>({
     mutationFn: (payload: P) => {
       setIsLoading(true);
       return apiClient.executeFunction<T>(functionName, payload);
