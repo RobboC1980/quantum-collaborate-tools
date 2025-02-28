@@ -19,6 +19,9 @@ import AdminDashboard from './pages/AdminDashboard';
 import NotFound from './pages/NotFound';
 import EpicManagement from './pages/EpicManagement';
 import ProjectManagement from './pages/ProjectManagement';
+import TeamManagement from './pages/TeamManagement';
+import Settings from './pages/Settings';
+import Reports from './pages/Reports';
 
 // Create a client with more robust settings
 const queryClient = new QueryClient({
@@ -80,6 +83,21 @@ function App() {
                     <ProjectManagement />
                   </ProtectedRoute>
                 } />
+                <Route path={ROUTES.DASHBOARD.TEAM} element={
+                  <ProtectedRoute>
+                    <TeamManagement />
+                  </ProtectedRoute>
+                } />
+                <Route path={ROUTES.DASHBOARD.REPORTS} element={
+                  <ProtectedRoute>
+                    <Reports />
+                  </ProtectedRoute>
+                } />
+                <Route path={ROUTES.DASHBOARD.SETTINGS} element={
+                  <ProtectedRoute>
+                    <Settings />
+                  </ProtectedRoute>
+                } />
                 
                 {/* Admin Routes */}
                 <Route path={ROUTES.ADMIN.HOME} element={
@@ -90,23 +108,6 @@ function App() {
                 <Route path={ROUTES.ADMIN.PROJECTS} element={
                   <ProtectedRoute adminOnly>
                     <ProjectManagement />
-                  </ProtectedRoute>
-                } />
-                
-                {/* Not yet implemented routes - redirect to NotFound */}
-                <Route path={ROUTES.DASHBOARD.TEAM} element={
-                  <ProtectedRoute>
-                    <NotFound />
-                  </ProtectedRoute>
-                } />
-                <Route path={ROUTES.DASHBOARD.REPORTS} element={
-                  <ProtectedRoute>
-                    <NotFound />
-                  </ProtectedRoute>
-                } />
-                <Route path={ROUTES.DASHBOARD.SETTINGS} element={
-                  <ProtectedRoute>
-                    <NotFound />
                   </ProtectedRoute>
                 } />
                 

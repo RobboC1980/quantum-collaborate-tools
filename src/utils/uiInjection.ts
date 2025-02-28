@@ -1,4 +1,3 @@
-
 import { Root, createRoot } from 'react-dom/client';
 import React from 'react';
 
@@ -97,39 +96,52 @@ class UIInjector {
     const root = this.injectedComponents.get(id);
     if (root) {
       try {
-        root.unmount();
-        console.log(`UI Injector: Component unmounted - ${id}`);
+        // Use requestAnimationFrame to safely schedule unmounting outside of React's rendering cycle
+        requestAnimationFrame(() => {
+          try {
+            root.unmount();
+            console.log(`UI Injector: Component unmounted - ${id}`);
+          } catch (e) {
+            console.error(`Error unmounting component ${id}:`, e);
+          } finally {
+            this.injectedComponents.delete(id);
+          }
+        });
       } catch (e) {
-        console.error(`Error unmounting component ${id}:`, e);
+        console.error(`Error scheduling unmount for component ${id}:`, e);
+        this.injectedComponents.delete(id);
       }
+    } else {
+      this.injectedComponents.delete(id);
     }
-    this.injectedComponents.delete(id);
   }
 
   /**
    * Clean up all injected components and disconnect the observer
    */
   public cleanup(): void {
-    // Unmount all roots
-    this.injectedComponents.forEach((root, id) => {
-      if (root) {
-        try {
-          root.unmount();
-        } catch (e) {
-          console.error(`Error unmounting component ${id}:`, e);
-        }
-      }
-    });
-    
-    this.injectedComponents.clear();
-    
-    // Disconnect observer
+    // Disconnect observer first
     if (this.observer) {
       this.observer.disconnect();
       this.observer = null;
     }
     
-    console.log('UI Injector: Cleanup complete');
+    // Schedule unmounting in the next animation frame to avoid conflicts with React rendering
+    requestAnimationFrame(() => {
+      // Unmount all roots
+      this.injectedComponents.forEach((root, id) => {
+        if (root) {
+          try {
+            root.unmount();
+          } catch (e) {
+            console.error(`Error unmounting component ${id}:`, e);
+          }
+        }
+      });
+      
+      this.injectedComponents.clear();
+      console.log('UI Injector: Cleanup complete');
+    });
   }
 
   /**

@@ -67,3 +67,107 @@ Simply open [Lovable](https://lovable.dev/projects/252f2218-f917-4d48-b384-10b8d
 ## I want to use a custom domain - is that possible?
 
 We don't support custom domains (yet). If you want to deploy your project under your own domain then we recommend using Netlify. Visit our docs for more details: [Custom domains](https://docs.lovable.dev/tips-tricks/custom-domain/)
+
+# QuantumScribe - Project Management Application
+
+## Role-Based Access Control (RBAC) Implementation
+
+The application implements a complete role-based access control system that seamlessly integrates with Supabase for authentication and database access.
+
+### Backend Components
+
+1. **Database Tables**
+   - `roles`: Stores role definitions with name, description, and system/default flags
+   - `permissions`: Stores available permissions with category and action
+   - `role_permissions`: Junction table connecting roles to their permissions
+   - `user_roles`: Junction table assigning roles to users
+
+2. **API Endpoints**
+   - `roles-api`: Supabase Edge Function that handles role management operations
+     - GET /roles - List all roles with their permissions
+     - GET /roles/:id - Get a specific role by ID
+     - POST /roles - Create a new role
+     - PUT /roles/:id - Update an existing role
+     - DELETE /roles/:id - Delete a role
+     - GET /permissions - List all available permissions
+     - POST /user-roles - Assign a role to a user
+     - DELETE /user-roles - Remove a role from a user
+     - GET /user-roles - Get roles assigned to a user
+
+3. **Authorization Middleware**
+   - `auth-middleware`: Supabase Edge Function that verifies user permissions
+     - Validates user JWT tokens
+     - Checks if users have required permissions
+     - Supports wildcard permissions and category:action format
+
+### Frontend Components
+
+1. **Service Layer**
+   - `roleService.ts`: API client for interacting with the role management endpoints
+     - Handles authentication token management
+     - Transforms data between API and UI formats
+     - Provides error handling and status messaging
+
+2. **React Hooks**
+   - `useRoles`: Custom hook for role management functionality
+     - Fetches and caches roles and permissions
+     - Provides methods for CRUD operations on roles
+     - Handles state management and UI feedback
+   - `useAuth`: Extended to include permission checking functionality
+     - Manages authentication state
+     - Provides `hasPermission` method to check user permissions
+
+3. **UI Components**
+   - `RolesManagement`: Main component for managing roles and permissions
+   - `RolesList`: Displays available roles in the system
+   - `RoleDetails`: Shows detailed information about a specific role
+   - `RoleForm`: Form for creating and editing roles
+   - `UserRoleAssignment`: Interface for assigning roles to users
+   - `PermissionGuard`: Component for conditionally rendering UI based on permissions
+   - `AnyPermissionGuard`: Component for checking multiple permissions
+
+### Security Features
+
+1. **Row Level Security (RLS)**
+   - Database tables are protected with RLS policies
+   - Users can only access data they are authorized to see
+
+2. **JWT Validation**
+   - All API requests validate JWT tokens
+   - Permissions are checked against the user's assigned roles
+
+3. **Fine-Grained Permissions**
+   - Permissions follow the format `category:action`
+   - Support for wildcard permissions (e.g., `projects:*`)
+   - Hierarchical permission structure
+
+## Usage Examples
+
+### Protecting UI Elements
+
+```tsx
+<PermissionGuard permission="roles:manage">
+  <Button>Manage Roles</Button>
+</PermissionGuard>
+```
+
+### Checking Permissions in Code
+
+```tsx
+const { hasPermission } = useAuth();
+const canEditProject = await hasPermission('projects:edit');
+```
+
+### Assigning Roles
+
+```tsx
+const { assignRoleToUser } = useRoles();
+await assignRoleToUser({ userId: 'user-id', roleId: 'role-id' });
+```
+
+## Future Enhancements
+
+1. Role inheritance for more complex permission hierarchies
+2. Time-limited role assignments
+3. Audit logging for permission changes
+4. Dynamic permission generation based on system features
