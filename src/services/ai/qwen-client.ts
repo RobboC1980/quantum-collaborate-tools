@@ -1,5 +1,5 @@
 import { toast } from '@/components/ui/use-toast';
-import axios from 'axios';
+import axios, { AxiosRequestConfig } from 'axios';
 
 // Define the types for QWEN 2.5 API
 export interface QwenCompletionRequest {
@@ -54,6 +54,7 @@ export interface QwenApiError extends Error {
   status?: number;
   code?: string;
   data?: Record<string, unknown>;
+  isAborted?: boolean;
 }
 
 // Configuration for QWEN API
@@ -71,7 +72,7 @@ const defaultConfig: QwenConfig = {
   // as it will be handled by our proxy server
   apiKey: '',
   baseUrl: '',
-  model: 'qwen-max',
+  model: 'qwen-plus', // Updated to use the newer model
   useProxy: true, // Always use the proxy to avoid exposing API keys in client
 };
 
@@ -80,8 +81,8 @@ const defaultConfig: QwenConfig = {
  */
 export class QwenClient {
   private config: QwenConfig;
-  private retryCount: number = 2;
-  private retryDelay: number = 1000;
+  private retryCount: number = 1; // Reduced retry count to minimize timeouts
+  private retryDelay: number = 500;
   private axiosInstance: ReturnType<typeof axios.create>;
   private debugMode: boolean = false;
 
@@ -107,12 +108,31 @@ export class QwenClient {
   /**
    * Make a request to the QWEN API
    */
-  private async makeRequest<T>(endpoint: string, body: Record<string, unknown>): Promise<T> {
+  private async makeRequest<T>(
+    endpoint: string, 
+    body: Record<string, unknown>,
+    signal?: AbortSignal
+  ): Promise<T> {
     let lastError: Error | null = null;
+    
+    // Create request config with abort signal if provided
+    const config: AxiosRequestConfig = {
+      signal
+    };
+
+    // If signal is already aborted, fail fast
+    if (signal?.aborted) {
+      throw this.createApiError('Request aborted by client', 499, 'ABORTED', undefined, true);
+    }
     
     // Implement retry logic
     for (let attempt = 0; attempt <= this.retryCount; attempt++) {
       try {
+        // Check if aborted between retries
+        if (signal?.aborted) {
+          throw this.createApiError('Request aborted by client', 499, 'ABORTED', undefined, true);
+        }
+        
         // If we're retrying, wait before the next attempt
         if (attempt > 0 && this.retryDelay > 0) {
           await new Promise(resolve => setTimeout(resolve, this.retryDelay * attempt));
@@ -123,7 +143,7 @@ export class QwenClient {
           console.log(`Making request to ${endpoint} (attempt ${attempt + 1}/${this.retryCount + 1})`);
         }
         
-        const response = await this.axiosInstance.post(endpoint, body);
+        const response = await this.axiosInstance.post(endpoint, body, config);
         
         if (this.debugMode) {
           console.log(`QWEN API Response (${endpoint}):`, response.status);
@@ -131,6 +151,11 @@ export class QwenClient {
 
         return response.data as T;
       } catch (error) {
+        // Handle abort errors immediately without retrying
+        if (axios.isCancel(error) || signal?.aborted) {
+          throw this.createApiError('Request aborted by client', 499, 'ABORTED', undefined, true);
+        }
+        
         if (this.debugMode) {
           console.error(`QWEN API Error (${endpoint}):`, error);
         }
@@ -179,33 +204,54 @@ export class QwenClient {
   /**
    * Create a standardized API error
    */
-  private createApiError(message: string, status?: number, code?: string, data?: Record<string, unknown>): QwenApiError {
+  private createApiError(
+    message: string, 
+    status?: number, 
+    code?: string, 
+    data?: Record<string, unknown>,
+    isAborted?: boolean
+  ): QwenApiError {
     const error = new Error(message) as QwenApiError;
     error.name = 'QwenApiError';
     if (status) error.status = status;
     if (code) error.code = code;
     if (data) error.data = data;
+    if (isAborted) error.isAborted = true;
     return error;
   }
 
   /**
    * Generate text completion using QWEN
    */
-  async createCompletion(request: QwenCompletionRequest): Promise<QwenCompletionResponse> {
+  async createCompletion(
+    request: QwenCompletionRequest,
+    signal?: AbortSignal
+  ): Promise<QwenCompletionResponse> {
     try {
-      return await this.makeRequest<QwenCompletionResponse>('/completions', {
-        model: this.config.model,
-        ...request,
-      });
+      return await this.makeRequest<QwenCompletionResponse>(
+        '/completions', 
+        {
+          model: this.config.model,
+          ...request,
+        },
+        signal
+      );
     } catch (error) {
       // Enhanced error handling for user feedback
       let errorMessage = "There was an error contacting the AI service. Please try again later.";
+      let showToast = true;
       
       if (error instanceof Error) {
         console.error('QWEN API Error:', error);
         
+        // Handle abort errors differently - don't show toast for user-initiated cancellations
+        const qwenError = error as QwenApiError;
+        if (qwenError.isAborted || signal?.aborted) {
+          errorMessage = "Request was cancelled.";
+          showToast = false; // Don't show toast for aborted requests
+        }
         // Provide more specific messages based on error type
-        if (axios.isAxiosError(error) && error.code === 'ECONNABORTED') {
+        else if (axios.isAxiosError(error) && error.code === 'ECONNABORTED') {
           errorMessage = "The AI service took too long to respond. Try with a shorter prompt or simpler request.";
         } else {
           errorMessage = error.message;
@@ -214,12 +260,14 @@ export class QwenClient {
         console.error('Unknown error:', error);
       }
       
-      // Show toast notification to user
-      toast({
-        title: "AI Request Failed",
-        description: errorMessage,
-        variant: "destructive",
-      });
+      // Show toast notification to user if needed
+      if (showToast) {
+        toast({
+          title: "AI Request Failed",
+          description: errorMessage,
+          variant: "destructive",
+        });
+      }
       
       throw error;
     }
@@ -228,71 +276,83 @@ export class QwenClient {
   /**
    * Generate embeddings
    */
-  async createEmbedding(request: QwenEmbeddingRequest): Promise<QwenEmbeddingResponse> {
+  async createEmbedding(
+    request: QwenEmbeddingRequest,
+    signal?: AbortSignal
+  ): Promise<QwenEmbeddingResponse> {
     try {
-      return await this.makeRequest<QwenEmbeddingResponse>('/embeddings', {
-        ...request,
-      });
+      return await this.makeRequest<QwenEmbeddingResponse>(
+        '/embeddings', 
+        {
+          ...request,
+        },
+        signal
+      );
     } catch (error) {
       // Enhanced error handling for user feedback
-      const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+      let errorMessage = error instanceof Error ? error.message : 'Unknown error';
+      let showToast = true;
+      
       console.error('QWEN Embedding API Error:', error);
       
-      // Show toast notification to user
-      toast({
-        title: "AI Embedding Failed",
-        description: "There was an error generating embeddings. Please try again later.",
-        variant: "destructive",
-      });
+      // Handle abort errors
+      if (error instanceof Error) {
+        const qwenError = error as QwenApiError;
+        if (qwenError.isAborted || signal?.aborted) {
+          errorMessage = "Embedding request was cancelled.";
+          showToast = false; // Don't show toast for aborted requests
+        }
+      }
+      
+      // Show toast notification to user if needed
+      if (showToast) {
+        toast({
+          title: "AI Embedding Failed",
+          description: "There was an error generating embeddings. Please try again later.",
+          variant: "destructive",
+        });
+      }
       
       throw error;
     }
   }
+}
 
-  /**
-   * Configure retry settings
-   */
-  setRetryOptions(count: number, delayMs: number): void {
-    this.retryCount = count;
-    this.retryDelay = delayMs;
-  }
-  
-  /**
-   * Enable or disable debug mode
-   */
-  setDebugMode(enabled: boolean): void {
-    this.debugMode = enabled;
-  }
-  
-  /**
-   * Handle API errors
-   */
-  static handleQwenApiError(error: unknown): void {
-    if (error instanceof Error) {
-      console.error('QWEN API Error:', error);
-      
-      toast({
-        title: "AI Request Failed",
-        description: error.message || "There was an error contacting the AI service",
-        variant: "destructive",
-      });
-    } else {
-      console.error('Unknown error:', error);
-      
-      toast({
-        title: "Unknown Error",
-        description: "An unexpected error occurred",
-        variant: "destructive",
-      });
+/**
+ * Singleton instance of the QWEN client
+ */
+export const qwenClient = new QwenClient();
+
+/**
+ * Handle API errors and provide user feedback
+ */
+export function handleQwenApiError(error: unknown): void {
+  if (error instanceof Error) {
+    console.error('QWEN API Error:', error);
+    
+    // Already handled in the client methods
+    const qwenError = error as QwenApiError;
+    if (qwenError.isAborted) {
+      // Don't show toast for aborted requests
+      return;
     }
+    
+    toast({
+      title: "AI Service Error",
+      description: error.message || "An error occurred with the AI service.",
+      variant: "destructive",
+    });
+  } else {
+    console.error('Unknown QWEN API error:', error);
+    toast({
+      title: "AI Service Error",
+      description: "An unknown error occurred with the AI service.",
+      variant: "destructive",
+    });
   }
 }
 
-// Export a singleton instance
-export const qwenClient = new QwenClient();
-
-// Export the error handler as a standalone function
-export const handleQwenApiError = QwenClient.handleQwenApiError;
+export default qwenClient;
 
 // Helper functions
 export async function createCompletion(

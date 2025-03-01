@@ -34,13 +34,22 @@ if (!fs.existsSync(envPath)) {
 const envContent = fs.readFileSync(envPath, 'utf8');
 const envLines = envContent.split('\n');
 
-// Check if QWEN_API_KEY is set in the server-side variables
-const apiKeyLine = envLines.find(line => line.trim().startsWith('QWEN_API_KEY='));
+// Check if DASHSCOPE_API_KEY is set
+const apiKeyLine = envLines.find(line => line.trim().startsWith('DASHSCOPE_API_KEY='));
 if (!apiKeyLine || apiKeyLine.split('=')[1].trim() === '') {
   console.log(chalk.yellow(
-    'Warning: QWEN_API_KEY is not set in your .env file.\n' +
-    'API requests will use the proxy configuration for development.\n' +
-    'If you want to use direct API calls, add your API key to the .env file.'
+    'Warning: DASHSCOPE_API_KEY is not set in your .env file.\n' +
+    'AI features will not work properly without a valid DashScope API key.\n' +
+    'Get your API key from the Alibaba Cloud DashScope service and add it to your .env file.'
+  ));
+}
+
+// Check for API URL
+const apiUrlLine = envLines.find(line => line.trim().startsWith('QWEN_API_URL='));
+if (!apiUrlLine || !apiUrlLine.includes('dashscope-intl.aliyuncs.com')) {
+  console.log(chalk.yellow(
+    'Warning: QWEN_API_URL is not set to the DashScope API URL in your .env file.\n' +
+    'Make sure it is set to https://dashscope-intl.aliyuncs.com/compatible-mode/v1'
   ));
 }
 
@@ -50,7 +59,7 @@ const viteConfigContent = fs.readFileSync(viteConfigPath, 'utf8');
 
 if (!viteConfigContent.includes('/api/qwen')) {
   console.log(chalk.yellow(
-    'Warning: Proxy configuration for QWEN API is not found in vite.config.ts.\n' +
+    'Warning: Proxy configuration for AI API is not found in vite.config.ts.\n' +
     'API requests may fail due to CORS issues. Please update your Vite configuration.'
   ));
 }
