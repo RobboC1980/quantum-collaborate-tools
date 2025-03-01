@@ -31,10 +31,15 @@ import {
   ListChecks,
   Paperclip,
   Flag,
-  Hash
+  Hash,
+  Sparkles
 } from 'lucide-react';
 import { StoryWithRelations, StoryType, StoryStatus, StoryPriority, RiskLevel } from '@/types/story';
 import { User as UserType, mockUsers } from '@/types/user';
+import AIAssistButton from '@/components/ai/AIAssistButton';
+import SuggestionPanel from '@/components/ai/SuggestionPanel';
+import { useAIAssistant } from '@/hooks/useAIAssistant';
+import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 
 interface StoryDetailDialogProps {
   story?: StoryWithRelations;
@@ -42,6 +47,40 @@ interface StoryDetailDialogProps {
   onClose: () => void;
   onSave?: (story: StoryWithRelations) => void;
 }
+
+// AI story generation options for the UI
+const STORY_GENERATION_PRESETS = [
+  {
+    id: 'standard',
+    name: 'Standard',
+    options: {
+      includeAcceptanceCriteria: true,
+      suggestTags: true,
+      suggestPoints: true,
+      temperature: 0.7
+    }
+  },
+  {
+    id: 'detailed',
+    name: 'Detailed',
+    options: {
+      includeAcceptanceCriteria: true,
+      suggestTags: true,
+      suggestPoints: true,
+      temperature: 0.5
+    }
+  },
+  {
+    id: 'creative',
+    name: 'Creative',
+    options: {
+      includeAcceptanceCriteria: true,
+      suggestTags: true,
+      suggestPoints: true,
+      temperature: 0.9
+    }
+  }
+];
 
 const StoryDetailDialog: React.FC<StoryDetailDialogProps> = ({
   story,
@@ -73,6 +112,31 @@ const StoryDetailDialog: React.FC<StoryDetailDialogProps> = ({
       reporterId: mockUsers[0].id, // Default to first user for now
     }
   );
+
+  // State for AI features
+  const [featureDescription, setFeatureDescription] = useState('');
+  const [selectedPreset, setSelectedPreset] = useState('standard');
+  const [showSuggestionPanel, setShowSuggestionPanel] = useState(false);
+  const [showGeneratedStory, setShowGeneratedStory] = useState(false);
+  const [showGeneratedCriteria, setShowGeneratedCriteria] = useState(false);
+  const [showSuggestedTags, setShowSuggestedTags] = useState(false);
+  const [showSuggestedPoints, setShowSuggestedPoints] = useState(false);
+  const [generatedStory, setGeneratedStory] = useState<Partial<StoryWithRelations> | null>(null);
+  const [generatedCriteria, setGeneratedCriteria] = useState<string[]>([]);
+  const [suggestedTags, setSuggestedTags] = useState<string[]>([]);
+  const [suggestedPoints, setSuggestedPoints] = useState<number | null>(null);
+
+  // Get AI assistant hook
+  const { 
+    isGeneratingStory,
+    isGeneratingCriteria, 
+    isGeneratingTags, 
+    isGeneratingPoints,
+    generateStory,
+    generateAcceptanceCriteria,
+    suggestStoryPoints,
+    suggestTags
+  } = useAIAssistant();
 
   const handleChange = (field: string, value: any) => {
     setFormData({
@@ -120,13 +184,146 @@ const StoryDetailDialog: React.FC<StoryDetailDialogProps> = ({
   };
 
   const addTag = (tag: string) => {
-    if (tag && !(formData.tags || []).includes(tag)) {
+    if (!formData.tags?.includes(tag)) {
       handleChange('tags', [...(formData.tags || []), tag]);
     }
   };
 
   const removeTag = (tag: string) => {
-    handleChange('tags', (formData.tags || []).filter(t => t !== tag));
+    handleChange('tags', formData.tags?.filter(t => t !== tag));
+  };
+
+  // AI functions
+  const handleGenerateStory = async () => {
+    if (!featureDescription) return;
+    
+    // Clear previous generations
+    setShowGeneratedStory(false);
+    setGeneratedStory(null);
+    
+    // Get preset options
+    const preset = STORY_GENERATION_PRESETS.find(p => p.id === selectedPreset);
+    
+    try {
+      // Generate story
+      const result = await generateStory({
+        featureDescription,
+        businessDomain: 'Software Development',
+      }, preset?.options);
+      
+      if (result) {
+        setGeneratedStory(result);
+        setShowGeneratedStory(true);
+      }
+    } catch (error) {
+      console.error('Error generating story:', error);
+    }
+  };
+
+  const handleAcceptGeneratedStory = (story: Partial<StoryWithRelations>) => {
+    if (!story) return;
+    
+    // Apply the generated story to the form
+    setFormData({
+      ...formData,
+      title: story.title,
+      description: story.description,
+      type: story.type as StoryType,
+      priority: story.priority as StoryPriority,
+      points: story.points,
+      tags: story.tags,
+      acceptanceCriteria: story.acceptanceCriteria.length > 0 ? story.acceptanceCriteria : [''],
+      businessValue: story.businessValue,
+      riskLevel: story.riskLevel as RiskLevel
+    });
+    
+    // Close the suggestion panel
+    setShowGeneratedStory(false);
+  };
+  
+  const handleGenerateAcceptanceCriteria = async () => {
+    if (!formData.description) return;
+    
+    setShowGeneratedCriteria(false);
+    setGeneratedCriteria([]);
+    
+    try {
+      const criteria = await generateAcceptanceCriteria(formData.description, 5);
+      
+      if (criteria && criteria.length > 0) {
+        setGeneratedCriteria(criteria);
+        setShowGeneratedCriteria(true);
+      }
+    } catch (error) {
+      console.error('Error generating acceptance criteria:', error);
+    }
+  };
+
+  const handleAcceptGeneratedCriteria = (criteria: string[]) => {
+    if (!criteria || criteria.length === 0) return;
+    
+    // Apply the generated criteria to the form
+    handleChange('acceptanceCriteria', criteria);
+    
+    // Close the suggestion panel
+    setShowGeneratedCriteria(false);
+  };
+  
+  const handleSuggestTags = async () => {
+    if (!formData.description) return;
+    
+    setShowSuggestedTags(false);
+    setSuggestedTags([]);
+    
+    try {
+      const tags = await suggestTags(formData.description, formData.tags);
+      
+      if (tags && tags.length > 0) {
+        setSuggestedTags(tags);
+        setShowSuggestedTags(true);
+      }
+    } catch (error) {
+      console.error('Error suggesting tags:', error);
+    }
+  };
+
+  const handleAcceptSuggestedTags = (tags: string[]) => {
+    if (!tags || tags.length === 0) return;
+    
+    // Apply the suggested tags to the form
+    handleChange('tags', [...(formData.tags || []), ...tags]);
+    
+    // Close the suggestion panel
+    setShowSuggestedTags(false);
+  };
+  
+  const handleSuggestPoints = async () => {
+    if (!formData.description || !formData.acceptanceCriteria?.length) return;
+    
+    setShowSuggestedPoints(false);
+    setSuggestedPoints(null);
+    
+    try {
+      const points = await suggestStoryPoints(
+        formData.description, 
+        formData.acceptanceCriteria.filter(c => c)
+      );
+      
+      setSuggestedPoints(points);
+      setShowSuggestedPoints(true);
+    } catch (error) {
+      console.error('Error suggesting story points:', error);
+    }
+  };
+
+  const handleAcceptSuggestedPoints = (points: number) => {
+    if (!points) return;
+    
+    // Apply the suggested points to the form
+    handleChange('points', points);
+    
+    // Close the suggestion panel
+    setShowSuggestedPoints(false);
   };
 
   // For new tag input
@@ -139,12 +336,9 @@ const StoryDetailDialog: React.FC<StoryDetailDialogProps> = ({
     <Dialog open={isOpen} onOpenChange={(open) => !open && onClose()}>
       <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
         <DialogHeader>
-          <DialogTitle>{isNewStory ? 'Create Story' : 'Edit Story'}</DialogTitle>
+          <DialogTitle>{isNewStory ? 'Create New Story' : 'Edit Story'}</DialogTitle>
           <DialogDescription>
-            {isNewStory 
-              ? 'Create a new story to track work in your project.' 
-              : `Editing story ${story?.id}`
-            }
+            {isNewStory ? 'Create a new user story for your project.' : 'Update the details of this story.'}
           </DialogDescription>
         </DialogHeader>
         
