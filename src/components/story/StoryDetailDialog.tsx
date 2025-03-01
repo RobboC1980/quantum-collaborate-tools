@@ -40,6 +40,9 @@ import AIAssistButton from '@/components/ai/AIAssistButton';
 import SuggestionPanel from '@/components/ai/SuggestionPanel';
 import { useAIAssistant } from '@/hooks/useAIAssistant';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
+import StoryAiAssistant from './StoryAiAssistant';
+import { toast } from '@/components/ui/use-toast';
+import { GeneratedStory } from '@/services/ai/story-generator';
 
 interface StoryDetailDialogProps {
   story?: StoryWithRelations;
@@ -332,22 +335,40 @@ const StoryDetailDialog: React.FC<StoryDetailDialogProps> = ({
   // For Fibonacci sequence in story points
   const fibonacciPoints = [0, 1, 2, 3, 5, 8, 13, 21];
 
+  const handleStoryGenerated = (generatedStory: GeneratedStory) => {
+    // Update form data with generated story
+    setFormData({
+      ...formData,
+      title: generatedStory.title,
+      description: generatedStory.description,
+      acceptanceCriteria: generatedStory.acceptanceCriteria
+    });
+    
+    toast({
+      title: "Story applied",
+      description: "AI-generated story has been applied to the form",
+    });
+  };
+
   return (
     <Dialog open={isOpen} onOpenChange={(open) => !open && onClose()}>
       <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
         <DialogHeader>
-          <DialogTitle>{isNewStory ? 'Create New Story' : 'Edit Story'}</DialogTitle>
+          <DialogTitle>{isNewStory ? 'Create Story' : 'Edit Story'}</DialogTitle>
           <DialogDescription>
-            {isNewStory ? 'Create a new user story for your project.' : 'Update the details of this story.'}
+            {isNewStory 
+              ? 'Create a new user story to describe a feature from the perspective of an end user.' 
+              : `Editing story ${story?.id}`
+            }
           </DialogDescription>
         </DialogHeader>
         
         <Tabs value={activeTab} onValueChange={setActiveTab}>
           <TabsList className="grid grid-cols-4">
             <TabsTrigger value="details">Details</TabsTrigger>
-            <TabsTrigger value="acceptance">Acceptance Criteria</TabsTrigger>
-            <TabsTrigger value="relationships">Relationships</TabsTrigger>
-            <TabsTrigger value="estimation">Estimation</TabsTrigger>
+            <TabsTrigger value="acceptance">Acceptance</TabsTrigger>
+            <TabsTrigger value="relations">Relations</TabsTrigger>
+            <TabsTrigger value="ai-assistant">AI Assistant</TabsTrigger>
           </TabsList>
           
           <TabsContent value="details" className="space-y-4 py-4">
@@ -562,7 +583,7 @@ const StoryDetailDialog: React.FC<StoryDetailDialogProps> = ({
             </div>
           </TabsContent>
           
-          <TabsContent value="relationships" className="space-y-4 py-4">
+          <TabsContent value="relations" className="space-y-4 py-4">
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
               <div className="space-y-4">
                 <div className="space-y-2">
@@ -650,37 +671,11 @@ const StoryDetailDialog: React.FC<StoryDetailDialogProps> = ({
             </div>
           </TabsContent>
           
-          <TabsContent value="estimation" className="space-y-4 py-4">
-            <div className="space-y-6">
-              <div className="space-y-2">
-                <Label>Story Points (Fibonacci)</Label>
-                <div className="flex flex-wrap gap-2 mt-2">
-                  {fibonacciPoints.map(points => (
-                    <Button
-                      key={points}
-                      type="button"
-                      variant={formData.points === points ? "default" : "outline"}
-                      className={`h-12 w-12 rounded-full p-0 text-center ${formData.points === points ? 'bg-quantum-600 hover:bg-quantum-700' : ''}`}
-                      onClick={() => handleChange('points', points)}
-                    >
-                      {points}
-                    </Button>
-                  ))}
-                </div>
-              </div>
-              
-              <div className="space-y-2">
-                <Label>Planning Poker (Team Estimation)</Label>
-                <div className="border rounded-md p-4 bg-muted/20">
-                  <div className="text-center">
-                    <p className="text-sm text-muted-foreground mb-4">
-                      In a real implementation, this would allow team members to submit estimates and calculate consensus.
-                    </p>
-                    <Button disabled variant="outline">Start Estimation Session</Button>
-                  </div>
-                </div>
-              </div>
-            </div>
+          <TabsContent value="ai-assistant" className="space-y-4 py-4">
+            <StoryAiAssistant
+              projectContext={formData.title ? `Related to: ${formData.title}` : ''}
+              onStoryGenerated={handleStoryGenerated}
+            />
           </TabsContent>
         </Tabs>
         

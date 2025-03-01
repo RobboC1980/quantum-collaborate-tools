@@ -19,6 +19,7 @@ import AdminDashboard from './pages/AdminDashboard';
 import NotFound from './pages/NotFound';
 import EpicManagement from './pages/EpicManagement';
 import ProjectManagement from './pages/ProjectManagement';
+import QwenApiTestPage from './pages/AiTestPage';
 
 // Create a client with more robust settings
 const queryClient = new QueryClient({
@@ -78,6 +79,11 @@ function App() {
                 <Route path={ROUTES.DASHBOARD.PROJECTS} element={
                   <ProtectedRoute>
                     <ProjectManagement />
+                  </ProtectedRoute>
+                } />
+                <Route path={ROUTES.DASHBOARD.AI_TEST} element={
+                  <ProtectedRoute>
+                    <QwenApiTestPage />
                   </ProtectedRoute>
                 } />
                 

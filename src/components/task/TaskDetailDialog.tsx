@@ -40,6 +40,9 @@ import {
 import { TaskWithRelations, TaskStatus, TaskPriority, Subtask } from '@/types/task';
 import { User as UserType, mockUsers } from '@/types/user';
 import { StoryWithRelations, mockStories } from '@/types/story';
+import TaskAiAssistant from './TaskAiAssistant';
+import { toast } from '@/components/ui/use-toast';
+import { GeneratedTask } from '@/services/ai/task-generator';
 
 interface TaskDetailDialogProps {
   task?: TaskWithRelations;
@@ -180,6 +183,75 @@ const TaskDetailDialog: React.FC<TaskDetailDialogProps> = ({
     setNewComment('');
   };
 
+  // Handlers for AI-generated tasks and subtasks
+  const handleTasksGenerated = (tasks: GeneratedTask[]) => {
+    if (tasks.length > 0) {
+      // Use the first generated task to update the form
+      const generatedTask = tasks[0];
+      
+      setFormData({
+        ...formData,
+        title: generatedTask.title,
+        description: generatedTask.description,
+      });
+      
+      toast({
+        title: "Task Applied",
+        description: "AI-generated task has been applied to the form",
+      });
+    }
+  };
+  
+  const handleSubtasksGenerated = (subtasks: string[]) => {
+    // Convert string subtasks into Subtask objects
+    const newSubtasks: Subtask[] = subtasks.map(title => ({
+      id: `ST-${Math.floor(Math.random() * 1000)}`,
+      title,
+      completed: false
+    }));
+    
+    // Add the new subtasks to existing ones
+    setFormData({
+      ...formData,
+      subtasks: [...(formData.subtasks || []), ...newSubtasks]
+    });
+    
+    toast({
+      title: "Subtasks Applied",
+      description: `${subtasks.length} AI-generated subtasks have been added`,
+    });
+  };
+  
+  const handleEstimateGenerated = (points: number) => {
+    // Assuming points can be translated to estimated hours
+    const estimatedHours = points * 1.5; // Simple conversion as an example
+    
+    setFormData({
+      ...formData,
+      estimatedHours: estimatedHours
+    });
+    
+    toast({
+      title: "Estimate Applied",
+      description: `AI-generated estimate of ${estimatedHours} hours has been applied`,
+    });
+  };
+  
+  const handleCompletionCriteriaGenerated = (criteria: string[]) => {
+    // Join the criteria into a single string and append to description
+    const criteriaText = "\n\nCompletion Criteria:\n" + criteria.map(c => `- ${c}`).join("\n");
+    
+    setFormData({
+      ...formData,
+      description: (formData.description || '') + criteriaText
+    });
+    
+    toast({
+      title: "Completion Criteria Applied",
+      description: "AI-generated completion criteria have been added to the description",
+    });
+  };
+
   return (
     <Dialog open={isOpen} onOpenChange={(open) => !open && onClose()}>
       <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
@@ -194,11 +266,12 @@ const TaskDetailDialog: React.FC<TaskDetailDialogProps> = ({
         </DialogHeader>
         
         <Tabs value={activeTab} onValueChange={setActiveTab}>
-          <TabsList className="grid grid-cols-4">
+          <TabsList className="grid grid-cols-5">
             <TabsTrigger value="details">Details</TabsTrigger>
             <TabsTrigger value="subtasks">Subtasks</TabsTrigger>
             <TabsTrigger value="time">Time Tracking</TabsTrigger>
             <TabsTrigger value="comments">Comments</TabsTrigger>
+            <TabsTrigger value="ai-assistant">AI Assistant</TabsTrigger>
           </TabsList>
           
           <TabsContent value="details" className="space-y-4 py-4">
@@ -597,6 +670,19 @@ const TaskDetailDialog: React.FC<TaskDetailDialogProps> = ({
                 )}
               </div>
             </div>
+          </TabsContent>
+          
+          {/* AI Assistant Tab */}
+          <TabsContent value="ai-assistant" className="space-y-4 py-4">
+            <TaskAiAssistant 
+              storyTitle={mockStories.find(s => s.id === formData.storyId)?.title}
+              storyDescription={mockStories.find(s => s.id === formData.storyId)?.description}
+              acceptanceCriteria={mockStories.find(s => s.id === formData.storyId)?.acceptanceCriteria || []}
+              onTasksGenerated={handleTasksGenerated}
+              onSubtasksGenerated={handleSubtasksGenerated}
+              onEstimateGenerated={handleEstimateGenerated}
+              onCompletionCriteriaGenerated={handleCompletionCriteriaGenerated}
+            />
           </TabsContent>
         </Tabs>
         

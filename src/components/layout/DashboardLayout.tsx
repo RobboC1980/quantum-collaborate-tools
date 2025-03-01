@@ -15,6 +15,7 @@ import {
   Layers,
   LogOut,
   Briefcase,
+  Sparkles
 } from 'lucide-react';
 import Breadcrumb from '@/components/navigation/Breadcrumb';
 import ErrorBoundary from '@/components/ui/error-boundary';
@@ -40,6 +41,7 @@ const DashboardLayout: React.FC<DashboardLayoutProps> = ({ children }) => {
     { label: 'Epics', icon: <Layers size={18} />, path: ROUTES.DASHBOARD.EPICS },
     { label: 'Team', icon: <Users size={18} />, path: ROUTES.DASHBOARD.TEAM },
     { label: 'Reports', icon: <BarChart2 size={18} />, path: ROUTES.DASHBOARD.REPORTS },
+    { label: 'AI Test', icon: <Sparkles size={18} />, path: ROUTES.DASHBOARD.AI_TEST },
     { label: 'Settings', icon: <Settings size={18} />, path: ROUTES.DASHBOARD.SETTINGS },
   ];
 

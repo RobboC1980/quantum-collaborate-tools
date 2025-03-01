@@ -65,28 +65,18 @@ export interface QwenConfig {
   useProxy?: boolean;
 }
 
-// Safe access to environment variables
-const getClientEnvVar = (key: string): string => {
-  // Direct access to typed Vite environment variables
-  if (key === 'VITE_QWEN_API_KEY') return import.meta.env.VITE_QWEN_API_KEY || '';
-  if (key === 'VITE_QWEN_API_URL') return import.meta.env.VITE_QWEN_API_URL || '';
-  if (key === 'VITE_QWEN_MODEL') return import.meta.env.VITE_QWEN_MODEL || '';
-  if (key === 'VITE_QWEN_EMBEDDING_MODEL') return import.meta.env.VITE_QWEN_EMBEDDING_MODEL || '';
-  
-  // Fallback to dynamic access (less reliable in production builds)
-  return (import.meta.env as Record<string, string>)[key] || '';
-};
-
-// Default configuration
+// Default configuration - using our dedicated API proxy
 const defaultConfig: QwenConfig = {
-  apiKey: getClientEnvVar('VITE_QWEN_API_KEY'),
-  baseUrl: getClientEnvVar('VITE_QWEN_API_URL') || 'https://api.qwen.ai/v1',
-  model: getClientEnvVar('VITE_QWEN_MODEL') || 'qwen2.5-7b-instruct',
-  useProxy: true, // Default to using the proxy in development
+  // In development, we don't need to provide the API key in the client
+  // as it will be handled by our proxy server
+  apiKey: '',
+  baseUrl: '',
+  model: 'qwen-max',
+  useProxy: true, // Always use the proxy to avoid exposing API keys in client
 };
 
 /**
- * QWEN API Client for interacting with QWEN 2.5 language model
+ * QWEN API Client for interacting with QWEN language model
  */
 export class QwenClient {
   private config: QwenConfig;
@@ -98,34 +88,16 @@ export class QwenClient {
   constructor(config?: Partial<QwenConfig>) {
     this.config = { ...defaultConfig, ...config };
     
-    // Only warn if no API key AND proxy is disabled
-    if (!this.config.apiKey && !this.config.useProxy) {
-      console.warn('QWEN API key is not set. API calls will fail unless using proxy.');
-    } else if (!this.config.apiKey && this.config.useProxy) {
-      // When using proxy without API key, check if we're in development mode
-      if (import.meta.env.DEV) {
-        console.info('Running with proxy in development mode. API key will be injected by the server.');
-      } else {
-        console.warn('Using proxy in production without API key may not work correctly.');
-      }
-    }
-    
-    // Determine the base URL based on whether we're using the proxy
-    const baseURL = this.config.useProxy 
-      ? '/api/qwen' // Use the Vite proxy
-      : this.config.baseUrl;
+    // Determine the base URL - always use proxy for security
+    const baseURL = '/api/qwen';
     
     // Create axios instance
     this.axiosInstance = axios.create({
       baseURL,
       headers: {
         'Content-Type': 'application/json',
-        ...(this.config.apiKey && !this.config.useProxy 
-          ? { 'Authorization': `Bearer ${this.config.apiKey}` } 
-          : {}),
-        ...(this.config.organizationId ? { 'Qwen-Organization': this.config.organizationId } : {}),
       },
-      timeout: 30000, // 30 second timeout
+      timeout: 120000, // 120 second timeout - AI can be slow for large prompts
     });
     
     // Enable debug mode in development
@@ -138,12 +110,6 @@ export class QwenClient {
   private async makeRequest<T>(endpoint: string, body: Record<string, unknown>): Promise<T> {
     let lastError: Error | null = null;
     
-    // If using proxy and we have an API key, add it to the request body
-    // This is a workaround for the proxy to forward the API key
-    if (this.config.useProxy && this.config.apiKey && !body.api_key) {
-      body = { ...body, api_key: this.config.apiKey };
-    }
-    
     // Implement retry logic
     for (let attempt = 0; attempt <= this.retryCount; attempt++) {
       try {
@@ -153,10 +119,14 @@ export class QwenClient {
         }
 
         // Make the API request
+        if (this.debugMode) {
+          console.log(`Making request to ${endpoint} (attempt ${attempt + 1}/${this.retryCount + 1})`);
+        }
+        
         const response = await this.axiosInstance.post(endpoint, body);
         
         if (this.debugMode) {
-          console.log(`QWEN API Response (${endpoint}):`, response.data);
+          console.log(`QWEN API Response (${endpoint}):`, response.status);
         }
 
         return response.data as T;
@@ -172,14 +142,22 @@ export class QwenClient {
           if (axios.isAxiosError(error)) {
             const status = error.response?.status || 500;
             const errorData = error.response?.data as Record<string, unknown> || {};
-            const message = typeof errorData.error === 'object' && errorData.error
-              ? (errorData.error as Record<string, unknown>).message as string
-              : error.message;
-            const code = typeof errorData.error === 'object' && errorData.error
-              ? (errorData.error as Record<string, unknown>).code as string
-              : undefined;
+            let message = error.message;
             
-            throw this.createApiError(message, status, code, errorData);
+            // Special handling for timeout errors
+            if (error.code === 'ECONNABORTED') {
+              message = 'The request to the AI service timed out. Try again with a shorter prompt or simpler request.';
+            } 
+            // Try to extract more detailed error message from the response
+            else if (typeof errorData.message === 'string') {
+              message = errorData.message;
+            } else if (typeof errorData.error === 'string') {
+              message = errorData.error;
+            } else if (typeof errorData.error === 'object' && errorData.error) {
+              message = (errorData.error as Record<string, unknown>).message as string || message;
+            }
+            
+            throw this.createApiError(message, status, error.code, errorData);
           }
           
           if (error instanceof Error) {
@@ -211,23 +189,64 @@ export class QwenClient {
   }
 
   /**
-   * Generate text completion using QWEN 2.5
+   * Generate text completion using QWEN
    */
   async createCompletion(request: QwenCompletionRequest): Promise<QwenCompletionResponse> {
-    return this.makeRequest<QwenCompletionResponse>('/completions', {
-      model: this.config.model,
-      ...request,
-    });
+    try {
+      return await this.makeRequest<QwenCompletionResponse>('/completions', {
+        model: this.config.model,
+        ...request,
+      });
+    } catch (error) {
+      // Enhanced error handling for user feedback
+      let errorMessage = "There was an error contacting the AI service. Please try again later.";
+      
+      if (error instanceof Error) {
+        console.error('QWEN API Error:', error);
+        
+        // Provide more specific messages based on error type
+        if (axios.isAxiosError(error) && error.code === 'ECONNABORTED') {
+          errorMessage = "The AI service took too long to respond. Try with a shorter prompt or simpler request.";
+        } else {
+          errorMessage = error.message;
+        }
+      } else {
+        console.error('Unknown error:', error);
+      }
+      
+      // Show toast notification to user
+      toast({
+        title: "AI Request Failed",
+        description: errorMessage,
+        variant: "destructive",
+      });
+      
+      throw error;
+    }
   }
 
   /**
-   * Generate embeddings using QWEN 2.5
+   * Generate embeddings
    */
   async createEmbedding(request: QwenEmbeddingRequest): Promise<QwenEmbeddingResponse> {
-    return this.makeRequest<QwenEmbeddingResponse>('/embeddings', {
-      model: request.model || 'qwen2.5-embedding',
-      ...request,
-    });
+    try {
+      return await this.makeRequest<QwenEmbeddingResponse>('/embeddings', {
+        ...request,
+      });
+    } catch (error) {
+      // Enhanced error handling for user feedback
+      const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+      console.error('QWEN Embedding API Error:', error);
+      
+      // Show toast notification to user
+      toast({
+        title: "AI Embedding Failed",
+        description: "There was an error generating embeddings. Please try again later.",
+        variant: "destructive",
+      });
+      
+      throw error;
+    }
   }
 
   /**
@@ -246,47 +265,55 @@ export class QwenClient {
   }
   
   /**
-   * Enable or disable proxy mode
+   * Handle API errors
    */
-  setUseProxy(enabled: boolean): void {
-    this.config.useProxy = enabled;
-    
-    // Recreate the axios instance with the new configuration
-    const baseURL = this.config.useProxy 
-      ? '/api/qwen' 
-      : this.config.baseUrl;
+  static handleQwenApiError(error: unknown): void {
+    if (error instanceof Error) {
+      console.error('QWEN API Error:', error);
       
-    this.axiosInstance = axios.create({
-      baseURL,
-      headers: {
-        'Content-Type': 'application/json',
-        ...(this.config.apiKey && !this.config.useProxy 
-          ? { 'Authorization': `Bearer ${this.config.apiKey}` } 
-          : {}),
-        ...(this.config.organizationId ? { 'Qwen-Organization': this.config.organizationId } : {}),
-      },
-      timeout: 30000,
-    });
+      toast({
+        title: "AI Request Failed",
+        description: error.message || "There was an error contacting the AI service",
+        variant: "destructive",
+      });
+    } else {
+      console.error('Unknown error:', error);
+      
+      toast({
+        title: "Unknown Error",
+        description: "An unexpected error occurred",
+        variant: "destructive",
+      });
+    }
   }
 }
 
-// Create and export a singleton instance with default configuration
+// Export a singleton instance
 export const qwenClient = new QwenClient();
 
-// Export a function to handle QWEN API errors gracefully
-export const handleQwenApiError = (error: Error | QwenApiError, fallbackMessage: string = 'AI service error'): QwenApiError => {
-  console.error('QWEN API Error:', error);
-  
-  const apiError = error as QwenApiError;
-  
-  // Display error toast (if not in a test environment)
-  if (import.meta.env.MODE !== 'test') {
-    toast({
-      title: 'AI Service Error',
-      description: apiError.message || fallbackMessage,
-      variant: 'destructive',
-    });
-  }
-  
-  return apiError;
-}; 
+// Export the error handler as a standalone function
+export const handleQwenApiError = QwenClient.handleQwenApiError;
+
+// Helper functions
+export async function createCompletion(
+  prompt: string, 
+  options?: Partial<QwenCompletionRequest>
+): Promise<QwenCompletionResponse> {
+  return qwenClient.createCompletion({
+    prompt,
+    max_tokens: options?.max_tokens || 1000,
+    temperature: options?.temperature || 0.7,
+    top_p: options?.top_p || 1,
+    ...options,
+  });
+}
+
+export async function createEmbedding(
+  input: string | string[],
+  options?: Partial<QwenEmbeddingRequest>
+): Promise<QwenEmbeddingResponse> {
+  return qwenClient.createEmbedding({
+    input,
+    ...options,
+  });
+} 

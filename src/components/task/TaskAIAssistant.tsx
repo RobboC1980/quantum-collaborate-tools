@@ -1,327 +1,710 @@
 import React, { useState } from 'react';
-import { Label } from '@/components/ui/label';
 import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Sparkles } from 'lucide-react';
-import AIAssistButton from '@/components/ai/AIAssistButton';
-import SuggestionPanel from '@/components/ai/SuggestionPanel';
-import { useAIAssistant } from '@/hooks/useAIAssistant';
-import { StoryWithRelations } from '@/types/story';
-import { GeneratedTask } from '@/services/ai/task-service';
+import { Card, CardContent, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { Label } from '@/components/ui/label';
+import { Input } from '@/components/ui/input';
+import { Textarea } from '@/components/ui/textarea';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Loader2, Sparkles, ListTodo, Calculator, CheckCircle2 } from 'lucide-react';
+import { useAiTaskGenerator } from '@/hooks';
+import { GeneratedTask } from '@/services/ai/task-generator';
+import { toast } from '@/components/ui/use-toast';
+import { Badge } from '@/components/ui/badge';
 
-interface TaskAIAssistantProps {
-  story?: Partial<StoryWithRelations>;
+interface TaskAiAssistantProps {
+  storyTitle?: string;
+  storyDescription?: string;
+  acceptanceCriteria?: string[];
   onTasksGenerated?: (tasks: GeneratedTask[]) => void;
-  onEstimateGenerated?: (estimatedHours: number) => void;
-  onSubtasksGenerated?: (subtasks: { title: string; completed: boolean }[]) => void;
-  onCriteriaGenerated?: (criteria: string) => void;
-  taskTitle?: string;
-  taskDescription?: string;
+  onSubtasksGenerated?: (subtasks: string[], parentTaskId?: string) => void;
+  onEstimateGenerated?: (points: number, taskId?: string) => void;
+  onCompletionCriteriaGenerated?: (criteria: string[], taskId?: string) => void;
 }
 
-/**
- * AI Assistant component specifically for task-related AI features
- */
-const TaskAIAssistant: React.FC<TaskAIAssistantProps> = ({
-  story,
+export function TaskAiAssistant({
+  storyTitle = '',
+  storyDescription = '',
+  acceptanceCriteria = [],
   onTasksGenerated,
-  onEstimateGenerated,
   onSubtasksGenerated,
-  onCriteriaGenerated,
-  taskTitle,
-  taskDescription
-}) => {
-  // State for generated items
-  const [generatedTasks, setGeneratedTasks] = useState<GeneratedTask[]>([]);
-  const [showGeneratedTasks, setShowGeneratedTasks] = useState(false);
-  const [suggestedEstimate, setSuggestedEstimate] = useState<number | null>(null);
-  const [showSuggestedEstimate, setShowSuggestedEstimate] = useState(false);
-  const [generatedSubtasks, setGeneratedSubtasks] = useState<{ title: string; completed: boolean }[]>([]);
-  const [showGeneratedSubtasks, setShowGeneratedSubtasks] = useState(false);
-  const [suggestedCriteria, setSuggestedCriteria] = useState<string>('');
-  const [showSuggestedCriteria, setShowSuggestedCriteria] = useState(false);
+  onEstimateGenerated,
+  onCompletionCriteriaGenerated
+}: TaskAiAssistantProps) {
+  // State for tabs
+  const [activeTab, setActiveTab] = useState('tasks');
 
-  // Get AI assistant functions
-  const {
-    isGeneratingTasks,
-    isGeneratingEstimate,
-    isGeneratingSubtasks,
-    isGeneratingCriteria,
-    breakdownStoryIntoTasks,
-    suggestTaskEstimate,
+  // State for tasks generation
+  const [taskType, setTaskType] = useState<'development' | 'design' | 'testing' | 'documentation' | 'general'>('development');
+  const [numberOfTasks, setNumberOfTasks] = useState(3);
+  const [teamContext, setTeamContext] = useState('');
+
+  // State for subtasks
+  const [parentTaskTitle, setParentTaskTitle] = useState('');
+  const [parentTaskDescription, setParentTaskDescription] = useState('');
+  const [numberOfSubtasks, setNumberOfSubtasks] = useState(3);
+  
+  // State for estimation
+  const [taskTitleForEstimation, setTaskTitleForEstimation] = useState('');
+  const [taskDescriptionForEstimation, setTaskDescriptionForEstimation] = useState('');
+  const [estimationScale, setEstimationScale] = useState<'fibonacci' | 'linear' | 'tshirt'>('fibonacci');
+  
+  // State for completion criteria
+  const [taskTitleForCriteria, setTaskTitleForCriteria] = useState('');
+  const [taskDescriptionForCriteria, setTaskDescriptionForCriteria] = useState('');
+  const [numberOfCriteria, setNumberOfCriteria] = useState(3);
+
+  // Use the AI task generator hook
+  const { 
+    generateTasks,
     generateSubtasks,
-    suggestCompletionCriteria
-  } = useAIAssistant();
-
-  // Handler for generating tasks from a story
-  const handleGenerateTasks = async () => {
-    if (!story) return;
-    
-    setShowGeneratedTasks(false);
-    setGeneratedTasks([]);
-    
-    try {
-      const tasks = await breakdownStoryIntoTasks(story, {
-        numberOfTasks: 4,
-        includeSubtasks: true,
-        suggestEstimates: true,
-        detailedDescriptions: true
+    estimateTaskEffort,
+    generateCompletionCriteria,
+    tasks,
+    subtasks,
+    estimatedPoints,
+    completionCriteria,
+    isGeneratingTasks,
+    isGeneratingSubtasks,
+    isEstimating,
+    isGeneratingCriteria,
+    error,
+    reset
+  } = useAiTaskGenerator({
+    onTasksSuccess: (generatedTasks) => {
+      if (generatedTasks.length > 0) {
+        toast({
+          title: "Tasks generated successfully",
+          description: `Generated ${generatedTasks.length} tasks from the story`,
+        });
+      }
+    },
+    onSubtasksSuccess: (generatedSubtasks) => {
+      if (generatedSubtasks.length > 0) {
+        toast({
+          title: "Subtasks generated successfully",
+          description: `Generated ${generatedSubtasks.length} subtasks`,
+        });
+      }
+    },
+    onEstimationSuccess: (points) => {
+      toast({
+        title: "Effort estimated",
+        description: `Estimated effort: ${points} points`,
       });
-      
-      if (tasks && tasks.length > 0) {
-        setGeneratedTasks(tasks);
-        setShowGeneratedTasks(true);
+    },
+    onCriteriaSuccess: (criteria) => {
+      if (criteria.length > 0) {
+        toast({
+          title: "Completion criteria generated",
+          description: `Generated ${criteria.length} completion criteria`,
+        });
       }
-    } catch (error) {
-      console.error('Error generating tasks:', error);
+    },
+    onError: (err) => {
+      toast({
+        title: "Error",
+        description: err.message,
+        variant: "destructive",
+      });
     }
-  };
+  });
 
-  // Handler for accepting generated tasks
-  const handleAcceptGeneratedTasks = (tasks: GeneratedTask[]) => {
-    if (!tasks || tasks.length === 0 || !onTasksGenerated) return;
-    
-    onTasksGenerated(tasks);
-    setShowGeneratedTasks(false);
-  };
-
-  // Handler for suggesting task estimate
-  const handleSuggestEstimate = async () => {
-    if (!taskTitle || !taskDescription) return;
-    
-    setShowSuggestedEstimate(false);
-    setSuggestedEstimate(null);
-    
-    try {
-      const estimate = await suggestTaskEstimate(taskTitle, taskDescription);
-      
-      setSuggestedEstimate(estimate);
-      setShowSuggestedEstimate(true);
-    } catch (error) {
-      console.error('Error suggesting task estimate:', error);
+  const handleGenerateTasks = async () => {
+    if (!storyTitle || !storyDescription) {
+      toast({
+        title: "Missing information",
+        description: "Story title and description are required",
+        variant: "destructive",
+      });
+      return;
     }
-  };
-
-  // Handler for accepting suggested estimate
-  const handleAcceptSuggestedEstimate = (estimate: number) => {
-    if (!estimate || !onEstimateGenerated) return;
     
-    onEstimateGenerated(estimate);
-    setShowSuggestedEstimate(false);
+    await generateTasks({
+      storyTitle,
+      storyDescription,
+      acceptanceCriteria,
+      teamContext,
+      taskType,
+      numberOfTasks,
+      includeTechDetails: true
+    });
   };
 
-  // Handler for generating subtasks
   const handleGenerateSubtasks = async () => {
-    if (!taskTitle || !taskDescription) return;
+    if (!parentTaskTitle || !parentTaskDescription) {
+      toast({
+        title: "Missing information",
+        description: "Task title and description are required",
+        variant: "destructive",
+      });
+      return;
+    }
     
-    setShowGeneratedSubtasks(false);
-    setGeneratedSubtasks([]);
+    await generateSubtasks({
+      parentTaskTitle,
+      parentTaskDescription,
+      teamContext,
+      taskType,
+      numberOfSubtasks
+    });
+  };
+
+  const handleEstimateTask = async () => {
+    if (!taskTitleForEstimation || !taskDescriptionForEstimation) {
+      toast({
+        title: "Missing information",
+        description: "Task title and description are required",
+        variant: "destructive",
+      });
+      return;
+    }
     
-    try {
-      const subtasks = await generateSubtasks(taskTitle, taskDescription, 4);
-      
-      if (subtasks && subtasks.length > 0) {
-        setGeneratedSubtasks(subtasks);
-        setShowGeneratedSubtasks(true);
-      }
-    } catch (error) {
-      console.error('Error generating subtasks:', error);
+    await estimateTaskEffort({
+      taskTitle: taskTitleForEstimation,
+      taskDescription: taskDescriptionForEstimation,
+      teamContext,
+      estimationScale
+    });
+  };
+
+  const handleGenerateCompletionCriteria = async () => {
+    if (!taskTitleForCriteria || !taskDescriptionForCriteria) {
+      toast({
+        title: "Missing information",
+        description: "Task title and description are required",
+        variant: "destructive",
+      });
+      return;
+    }
+    
+    await generateCompletionCriteria({
+      taskTitle: taskTitleForCriteria,
+      taskDescription: taskDescriptionForCriteria,
+      taskType,
+      numberOfCriteria
+    });
+  };
+
+  const handleUseTasks = () => {
+    if (onTasksGenerated && tasks.length > 0) {
+      onTasksGenerated(tasks);
+      toast({
+        title: "Tasks applied",
+        description: "The generated tasks have been applied",
+      });
     }
   };
 
-  // Handler for accepting generated subtasks
-  const handleAcceptGeneratedSubtasks = (subtasks: { title: string; completed: boolean }[]) => {
-    if (!subtasks || subtasks.length === 0 || !onSubtasksGenerated) return;
-    
-    onSubtasksGenerated(subtasks);
-    setShowGeneratedSubtasks(false);
-  };
-
-  // Handler for suggesting completion criteria
-  const handleSuggestCompletionCriteria = async () => {
-    if (!taskTitle || !taskDescription) return;
-    
-    setShowSuggestedCriteria(false);
-    setSuggestedCriteria('');
-    
-    try {
-      const criteria = await suggestCompletionCriteria(taskTitle, taskDescription);
-      
-      if (criteria) {
-        setSuggestedCriteria(criteria);
-        setShowSuggestedCriteria(true);
-      }
-    } catch (error) {
-      console.error('Error suggesting completion criteria:', error);
+  const handleUseSubtasks = () => {
+    if (onSubtasksGenerated && subtasks.length > 0) {
+      onSubtasksGenerated(subtasks);
+      toast({
+        title: "Subtasks applied",
+        description: "The generated subtasks have been applied",
+      });
     }
   };
 
-  // Handler for accepting suggested completion criteria
-  const handleAcceptSuggestedCriteria = (criteria: string) => {
-    if (!criteria || !onCriteriaGenerated) return;
-    
-    onCriteriaGenerated(criteria);
-    setShowSuggestedCriteria(false);
+  const handleUseEstimate = () => {
+    if (onEstimateGenerated && estimatedPoints !== null) {
+      onEstimateGenerated(estimatedPoints);
+      toast({
+        title: "Estimate applied",
+        description: "The generated estimate has been applied",
+      });
+    }
   };
 
-  // Determines which AI features to render based on provided props
-  const renderContent = () => {
-    // For story breakdown into tasks
-    if (story && onTasksGenerated) {
-      return (
-        <>
-          <div className="flex justify-between items-center mb-4">
-            <div className="flex items-center">
-              <Sparkles className="h-5 w-5 mr-2 text-quantum-500" />
-              <h3 className="text-lg font-medium">AI Task Generation</h3>
-            </div>
-            
-            <AIAssistButton
-              onClick={handleGenerateTasks}
-              tooltip="Break down story into tasks"
-              isLoading={isGeneratingTasks}
-              disabled={isGeneratingTasks}
-            >
-              Generate Tasks
-            </AIAssistButton>
-          </div>
-          
-          {showGeneratedTasks && (
-            <SuggestionPanel
-              title="Generated Tasks"
-              description="AI has broken down the story into these tasks"
-              suggestions={generatedTasks}
-              isLoading={isGeneratingTasks}
-              type="list"
-              onAccept={handleAcceptGeneratedTasks}
-              onReject={() => setShowGeneratedTasks(false)}
-            />
-          )}
-        </>
-      );
+  const handleUseCriteria = () => {
+    if (onCompletionCriteriaGenerated && completionCriteria.length > 0) {
+      onCompletionCriteriaGenerated(completionCriteria);
+      toast({
+        title: "Criteria applied",
+        description: "The generated completion criteria have been applied",
+      });
     }
-    
-    // For task details (estimate, subtasks, completion criteria)
-    if (taskTitle && taskDescription) {
-      return (
-        <div className="space-y-4">
-          <div className="flex items-center mb-2">
-            <Sparkles className="h-5 w-5 mr-2 text-quantum-500" />
-            <h3 className="text-lg font-medium">AI Task Assistant</h3>
-          </div>
-          
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            {/* Task estimate suggestion */}
-            {onEstimateGenerated && (
-              <div>
-                <div className="flex justify-between items-center mb-2">
-                  <Label>Estimated Hours</Label>
-                  <AIAssistButton
-                    onClick={handleSuggestEstimate}
-                    tooltip="Suggest estimated hours"
-                    isLoading={isGeneratingEstimate}
-                    disabled={isGeneratingEstimate}
-                    size="sm"
-                    variant="ghost"
-                  >
-                    Suggest
-                  </AIAssistButton>
-                </div>
-                
-                {showSuggestedEstimate && (
-                  <SuggestionPanel
-                    title="Suggested Estimate"
-                    description="AI-suggested time estimate"
-                    suggestions={suggestedEstimate}
-                    isLoading={isGeneratingEstimate}
-                    type="number"
-                    onAccept={handleAcceptSuggestedEstimate}
-                    onReject={() => setShowSuggestedEstimate(false)}
-                  />
-                )}
-              </div>
-            )}
-            
-            {/* Completion criteria suggestion */}
-            {onCriteriaGenerated && (
-              <div>
-                <div className="flex justify-between items-center mb-2">
-                  <Label>Completion Criteria</Label>
-                  <AIAssistButton
-                    onClick={handleSuggestCompletionCriteria}
-                    tooltip="Suggest completion criteria"
-                    isLoading={isGeneratingCriteria}
-                    disabled={isGeneratingCriteria}
-                    size="sm"
-                    variant="ghost"
-                  >
-                    Suggest
-                  </AIAssistButton>
-                </div>
-                
-                {showSuggestedCriteria && (
-                  <SuggestionPanel
-                    title="Suggested Criteria"
-                    description="AI-suggested completion criteria"
-                    suggestions={suggestedCriteria}
-                    isLoading={isGeneratingCriteria}
-                    type="text"
-                    onAccept={handleAcceptSuggestedCriteria}
-                    onReject={() => setShowSuggestedCriteria(false)}
-                  />
-                )}
-              </div>
-            )}
-          </div>
-          
-          {/* Subtasks generation */}
-          {onSubtasksGenerated && (
-            <div>
-              <div className="flex justify-between items-center mb-2">
-                <Label>Subtasks</Label>
-                <AIAssistButton
-                  onClick={handleGenerateSubtasks}
-                  tooltip="Generate subtasks"
-                  isLoading={isGeneratingSubtasks}
-                  disabled={isGeneratingSubtasks}
-                  size="sm"
-                >
-                  Generate Subtasks
-                </AIAssistButton>
-              </div>
-              
-              {showGeneratedSubtasks && (
-                <SuggestionPanel
-                  title="Generated Subtasks"
-                  description="AI-generated subtasks for this task"
-                  suggestions={generatedSubtasks}
-                  isLoading={isGeneratingSubtasks}
-                  type="list"
-                  onAccept={handleAcceptGeneratedSubtasks}
-                  onReject={() => setShowGeneratedSubtasks(false)}
-                />
-              )}
-            </div>
-          )}
-        </div>
-      );
-    }
-    
-    // Default empty state
-    return (
-      <div className="flex items-center justify-center p-4 text-center text-muted-foreground">
-        <p>No context available for AI assistance</p>
-      </div>
-    );
   };
 
   return (
-    <Card className="border-quantum-200">
-      <CardContent className="pt-6">
-        {renderContent()}
+    <Card className="w-full">
+      <CardHeader>
+        <CardTitle className="flex items-center gap-2">
+          <Sparkles className="h-5 w-5" />
+          AI Task Assistant
+        </CardTitle>
+      </CardHeader>
+      
+      <CardContent>
+        <Tabs
+          value={activeTab}
+          onValueChange={setActiveTab}
+          className="w-full"
+        >
+          <TabsList className="grid grid-cols-4 mb-4">
+            <TabsTrigger value="tasks" className="flex items-center gap-1">
+              <ListTodo className="h-4 w-4" />
+              Tasks
+            </TabsTrigger>
+            <TabsTrigger value="subtasks" className="flex items-center gap-1">
+              <ListTodo className="h-4 w-4" />
+              Subtasks
+            </TabsTrigger>
+            <TabsTrigger value="estimate" className="flex items-center gap-1">
+              <Calculator className="h-4 w-4" />
+              Estimate
+            </TabsTrigger>
+            <TabsTrigger value="criteria" className="flex items-center gap-1">
+              <CheckCircle2 className="h-4 w-4" />
+              Criteria
+            </TabsTrigger>
+          </TabsList>
+
+          {/* Task Generation Tab */}
+          <TabsContent value="tasks" className="space-y-4">
+            <div className="space-y-2">
+              <Label>Task Type</Label>
+              <Select 
+                value={taskType} 
+                onValueChange={(value) => setTaskType(value as any)}
+              >
+                <SelectTrigger>
+                  <SelectValue placeholder="Select task type" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="development">Development</SelectItem>
+                  <SelectItem value="design">Design</SelectItem>
+                  <SelectItem value="testing">Testing</SelectItem>
+                  <SelectItem value="documentation">Documentation</SelectItem>
+                  <SelectItem value="general">General</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+            
+            <div className="grid grid-cols-2 gap-4">
+              <div className="space-y-2">
+                <Label>Team Context (Optional)</Label>
+                <Input 
+                  placeholder="e.g. Frontend team"
+                  value={teamContext}
+                  onChange={(e) => setTeamContext(e.target.value)}
+                />
+              </div>
+              
+              <div className="space-y-2">
+                <Label>Number of Tasks</Label>
+                <Select 
+                  value={String(numberOfTasks)} 
+                  onValueChange={(value) => setNumberOfTasks(Number(value))}
+                >
+                  <SelectTrigger>
+                    <SelectValue placeholder="Select number" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="1">1 Task</SelectItem>
+                    <SelectItem value="2">2 Tasks</SelectItem>
+                    <SelectItem value="3">3 Tasks</SelectItem>
+                    <SelectItem value="4">4 Tasks</SelectItem>
+                    <SelectItem value="5">5 Tasks</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+            </div>
+            
+            <Button 
+              onClick={handleGenerateTasks}
+              disabled={isGeneratingTasks || !storyTitle || !storyDescription}
+              className="w-full"
+            >
+              {isGeneratingTasks ? (
+                <>
+                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                  Generating Tasks...
+                </>
+              ) : (
+                <>
+                  <Sparkles className="mr-2 h-4 w-4" />
+                  Generate Tasks from Story
+                </>
+              )}
+            </Button>
+            
+            {error && activeTab === 'tasks' && (
+              <div className="text-red-500 text-sm p-2 bg-red-50 rounded border border-red-200">
+                Error: {error.message}
+              </div>
+            )}
+            
+            {tasks.length > 0 && (
+              <div className="mt-4 space-y-4">
+                <div className="flex justify-between items-center">
+                  <h3 className="font-semibold">Generated Tasks</h3>
+                  <Badge variant="outline">AI Generated</Badge>
+                </div>
+                
+                <div className="space-y-3">
+                  {tasks.map((task, index) => (
+                    <div key={index} className="border rounded-md p-3">
+                      <div className="flex justify-between items-start">
+                        <h4 className="font-medium">{task.title}</h4>
+                        {task.estimatedPoints && (
+                          <Badge variant="secondary">
+                            {task.estimatedPoints} points
+                          </Badge>
+                        )}
+                      </div>
+                      <p className="text-sm mt-1">{task.description}</p>
+                    </div>
+                  ))}
+                </div>
+                
+                {onTasksGenerated && (
+                  <Button 
+                    onClick={handleUseTasks}
+                    className="w-full"
+                  >
+                    Use These Tasks
+                  </Button>
+                )}
+              </div>
+            )}
+          </TabsContent>
+
+          {/* Subtask Generation Tab */}
+          <TabsContent value="subtasks" className="space-y-4">
+            <div className="space-y-2">
+              <Label htmlFor="parentTaskTitle">Parent Task Title</Label>
+              <Input
+                id="parentTaskTitle"
+                placeholder="Enter the parent task title"
+                value={parentTaskTitle}
+                onChange={(e) => setParentTaskTitle(e.target.value)}
+              />
+            </div>
+            
+            <div className="space-y-2">
+              <Label htmlFor="parentTaskDescription">Parent Task Description</Label>
+              <Textarea
+                id="parentTaskDescription"
+                placeholder="Enter the parent task description"
+                value={parentTaskDescription}
+                onChange={(e) => setParentTaskDescription(e.target.value)}
+                rows={3}
+              />
+            </div>
+            
+            <div className="grid grid-cols-2 gap-4">
+              <div className="space-y-2">
+                <Label>Task Type</Label>
+                <Select 
+                  value={taskType} 
+                  onValueChange={(value) => setTaskType(value as any)}
+                >
+                  <SelectTrigger>
+                    <SelectValue placeholder="Select task type" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="development">Development</SelectItem>
+                    <SelectItem value="design">Design</SelectItem>
+                    <SelectItem value="testing">Testing</SelectItem>
+                    <SelectItem value="documentation">Documentation</SelectItem>
+                    <SelectItem value="general">General</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+              
+              <div className="space-y-2">
+                <Label>Number of Subtasks</Label>
+                <Select 
+                  value={String(numberOfSubtasks)} 
+                  onValueChange={(value) => setNumberOfSubtasks(Number(value))}
+                >
+                  <SelectTrigger>
+                    <SelectValue placeholder="Select number" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="2">2 Subtasks</SelectItem>
+                    <SelectItem value="3">3 Subtasks</SelectItem>
+                    <SelectItem value="4">4 Subtasks</SelectItem>
+                    <SelectItem value="5">5 Subtasks</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+            </div>
+            
+            <Button 
+              onClick={handleGenerateSubtasks}
+              disabled={isGeneratingSubtasks || !parentTaskTitle || !parentTaskDescription}
+              className="w-full"
+            >
+              {isGeneratingSubtasks ? (
+                <>
+                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                  Generating Subtasks...
+                </>
+              ) : (
+                <>
+                  <Sparkles className="mr-2 h-4 w-4" />
+                  Generate Subtasks
+                </>
+              )}
+            </Button>
+            
+            {error && activeTab === 'subtasks' && (
+              <div className="text-red-500 text-sm p-2 bg-red-50 rounded border border-red-200">
+                Error: {error.message}
+              </div>
+            )}
+            
+            {subtasks.length > 0 && (
+              <div className="mt-4 space-y-4">
+                <div className="flex justify-between items-center">
+                  <h3 className="font-semibold">Generated Subtasks</h3>
+                  <Badge variant="outline">AI Generated</Badge>
+                </div>
+                
+                <div className="border rounded-md p-3">
+                  <ul className="space-y-2">
+                    {subtasks.map((subtask, index) => (
+                      <li key={index} className="flex items-start gap-2">
+                        <span className="text-muted-foreground">{index + 1}.</span>
+                        <span>{subtask}</span>
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+                
+                {onSubtasksGenerated && (
+                  <Button 
+                    onClick={handleUseSubtasks}
+                    className="w-full"
+                  >
+                    Use These Subtasks
+                  </Button>
+                )}
+              </div>
+            )}
+          </TabsContent>
+
+          {/* Effort Estimation Tab */}
+          <TabsContent value="estimate" className="space-y-4">
+            <div className="space-y-2">
+              <Label htmlFor="taskTitleForEstimation">Task Title</Label>
+              <Input
+                id="taskTitleForEstimation"
+                placeholder="Enter the task title"
+                value={taskTitleForEstimation}
+                onChange={(e) => setTaskTitleForEstimation(e.target.value)}
+              />
+            </div>
+            
+            <div className="space-y-2">
+              <Label htmlFor="taskDescriptionForEstimation">Task Description</Label>
+              <Textarea
+                id="taskDescriptionForEstimation"
+                placeholder="Enter the task description"
+                value={taskDescriptionForEstimation}
+                onChange={(e) => setTaskDescriptionForEstimation(e.target.value)}
+                rows={3}
+              />
+            </div>
+            
+            <div className="space-y-2">
+              <Label>Estimation Scale</Label>
+              <Select 
+                value={estimationScale} 
+                onValueChange={(value) => setEstimationScale(value as any)}
+              >
+                <SelectTrigger>
+                  <SelectValue placeholder="Select estimation scale" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="fibonacci">Fibonacci (1,2,3,5,8,13,21)</SelectItem>
+                  <SelectItem value="linear">Linear (1-10)</SelectItem>
+                  <SelectItem value="tshirt">T-Shirt Sizes (XS,S,M,L,XL,XXL)</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+            
+            <Button 
+              onClick={handleEstimateTask}
+              disabled={isEstimating || !taskTitleForEstimation || !taskDescriptionForEstimation}
+              className="w-full"
+            >
+              {isEstimating ? (
+                <>
+                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                  Estimating...
+                </>
+              ) : (
+                <>
+                  <Calculator className="mr-2 h-4 w-4" />
+                  Estimate Task Effort
+                </>
+              )}
+            </Button>
+            
+            {error && activeTab === 'estimate' && (
+              <div className="text-red-500 text-sm p-2 bg-red-50 rounded border border-red-200">
+                Error: {error.message}
+              </div>
+            )}
+            
+            {estimatedPoints !== null && (
+              <div className="mt-4 space-y-4">
+                <div className="flex justify-between items-center">
+                  <h3 className="font-semibold">Estimated Effort</h3>
+                  <Badge variant="outline">AI Generated</Badge>
+                </div>
+                
+                <div className="border rounded-md p-3 flex justify-center items-center flex-col">
+                  <span className="text-4xl font-bold">{estimatedPoints}</span>
+                  <span className="text-sm text-muted-foreground mt-1">
+                    {estimationScale === 'fibonacci' && 'Fibonacci Points'}
+                    {estimationScale === 'linear' && 'Linear Points'}
+                    {estimationScale === 'tshirt' && 
+                      `T-Shirt Size (${
+                        estimatedPoints === 1 ? 'XS' : 
+                        estimatedPoints === 2 ? 'S' : 
+                        estimatedPoints === 3 ? 'M' : 
+                        estimatedPoints === 5 ? 'L' : 
+                        estimatedPoints === 8 ? 'XL' : 'XXL'
+                      })`
+                    }
+                  </span>
+                </div>
+                
+                {onEstimateGenerated && (
+                  <Button 
+                    onClick={handleUseEstimate}
+                    className="w-full"
+                  >
+                    Use This Estimate
+                  </Button>
+                )}
+              </div>
+            )}
+          </TabsContent>
+
+          {/* Completion Criteria Tab */}
+          <TabsContent value="criteria" className="space-y-4">
+            <div className="space-y-2">
+              <Label htmlFor="taskTitleForCriteria">Task Title</Label>
+              <Input
+                id="taskTitleForCriteria"
+                placeholder="Enter the task title"
+                value={taskTitleForCriteria}
+                onChange={(e) => setTaskTitleForCriteria(e.target.value)}
+              />
+            </div>
+            
+            <div className="space-y-2">
+              <Label htmlFor="taskDescriptionForCriteria">Task Description</Label>
+              <Textarea
+                id="taskDescriptionForCriteria"
+                placeholder="Enter the task description"
+                value={taskDescriptionForCriteria}
+                onChange={(e) => setTaskDescriptionForCriteria(e.target.value)}
+                rows={3}
+              />
+            </div>
+            
+            <div className="grid grid-cols-2 gap-4">
+              <div className="space-y-2">
+                <Label>Task Type</Label>
+                <Select 
+                  value={taskType} 
+                  onValueChange={(value) => setTaskType(value as any)}
+                >
+                  <SelectTrigger>
+                    <SelectValue placeholder="Select task type" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="development">Development</SelectItem>
+                    <SelectItem value="design">Design</SelectItem>
+                    <SelectItem value="testing">Testing</SelectItem>
+                    <SelectItem value="documentation">Documentation</SelectItem>
+                    <SelectItem value="general">General</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+              
+              <div className="space-y-2">
+                <Label>Number of Criteria</Label>
+                <Select 
+                  value={String(numberOfCriteria)} 
+                  onValueChange={(value) => setNumberOfCriteria(Number(value))}
+                >
+                  <SelectTrigger>
+                    <SelectValue placeholder="Select number" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="2">2 Criteria</SelectItem>
+                    <SelectItem value="3">3 Criteria</SelectItem>
+                    <SelectItem value="4">4 Criteria</SelectItem>
+                    <SelectItem value="5">5 Criteria</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+            </div>
+            
+            <Button 
+              onClick={handleGenerateCompletionCriteria}
+              disabled={isGeneratingCriteria || !taskTitleForCriteria || !taskDescriptionForCriteria}
+              className="w-full"
+            >
+              {isGeneratingCriteria ? (
+                <>
+                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                  Generating Criteria...
+                </>
+              ) : (
+                <>
+                  <CheckCircle2 className="mr-2 h-4 w-4" />
+                  Generate Completion Criteria
+                </>
+              )}
+            </Button>
+            
+            {error && activeTab === 'criteria' && (
+              <div className="text-red-500 text-sm p-2 bg-red-50 rounded border border-red-200">
+                Error: {error.message}
+              </div>
+            )}
+            
+            {completionCriteria.length > 0 && (
+              <div className="mt-4 space-y-4">
+                <div className="flex justify-between items-center">
+                  <h3 className="font-semibold">Completion Criteria</h3>
+                  <Badge variant="outline">AI Generated</Badge>
+                </div>
+                
+                <div className="border rounded-md p-3">
+                  <ul className="space-y-2">
+                    {completionCriteria.map((criterion, index) => (
+                      <li key={index} className="flex items-start gap-2">
+                        <span className="text-muted-foreground">•</span>
+                        <span>{criterion}</span>
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+                
+                {onCompletionCriteriaGenerated && (
+                  <Button 
+                    onClick={handleUseCriteria}
+                    className="w-full"
+                  >
+                    Use These Criteria
+                  </Button>
+                )}
+              </div>
+            )}
+          </TabsContent>
+        </Tabs>
       </CardContent>
     </Card>
   );
-};
+}
 
-export default TaskAIAssistant; 
+export default TaskAiAssistant; 

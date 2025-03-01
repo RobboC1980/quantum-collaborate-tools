@@ -25,6 +25,7 @@ export const DASHBOARD_ROUTES = {
   TEAM: '/dashboard/team',
   REPORTS: '/dashboard/reports',
   SETTINGS: '/dashboard/settings',
+  AI_TEST: '/dashboard/ai-test',
 };
 
 // Admin routes

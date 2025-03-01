@@ -37,7 +37,7 @@ export class StoryGenerator {
         numberOfStories = 1
       } = params;
 
-      // Create prompt for the AI
+      // Create concise prompt for the AI
       const prompt = this.createStoryGenerationPrompt(
         projectContext,
         featureDescription,
@@ -46,14 +46,16 @@ export class StoryGenerator {
         numberOfStories
       );
 
-      // Configure the request
+      // Configure the request with more conservative settings
       const request: QwenCompletionRequest = {
         prompt,
-        max_tokens: 2000,
-        temperature: 0.7,
+        max_tokens: 1000, // Reduce token count to avoid timeouts
+        temperature: 0.5, // Lower temperature for more predictable output
         top_p: 0.9,
       };
 
+      console.log("Generating stories with prompt length:", prompt.length);
+      
       // Call the QWEN API
       const response = await qwenClient.createCompletion(request);
       
@@ -62,7 +64,7 @@ export class StoryGenerator {
       return this.parseStoryResponse(generatedText);
       
     } catch (error) {
-      handleQwenApiError(error, 'Failed to generate stories');
+      handleQwenApiError(error);
       return [];
     }
   }
@@ -77,42 +79,29 @@ export class StoryGenerator {
     additionalContext: string,
     numberOfStories: number
   ): string {
+    // More concise prompt to reduce likelihood of timeout
     return `
-I need to create ${numberOfStories} detailed user stor${numberOfStories > 1 ? 'ies' : 'y'} for a software development project.
+Generate ${numberOfStories} user stor${numberOfStories > 1 ? 'ies' : 'y'} for this feature:
+${featureDescription}
+${projectContext ? `Context: ${projectContext}` : ''}
+${additionalContext ? `Additional info: ${additionalContext}` : ''}
 
-${projectContext ? `Project Context: ${projectContext}\n` : ''}
+Each story should use the perspective: "${userPerspective}"
 
-Feature to implement: ${featureDescription}
+For each story include:
+1. Title: "As a [user], I want [action], so that [benefit]"
+2. Description: Brief explanation
+3. Acceptance Criteria: 3-5 specific testable items
 
-${additionalContext ? `Additional context: ${additionalContext}\n` : ''}
-
-Please generate ${numberOfStories} well-structured user stor${numberOfStories > 1 ? 'ies' : 'y'} from the perspective of "${userPerspective}".
-
-For each story, include:
-1. A clear title in the format "As a [user type], I want [action], so that [benefit]"
-2. A detailed description explaining the feature
-3. A list of acceptance criteria (at least 3)
-
-Format the response as follows:
+Format:
 STORY 1:
-TITLE: [User story title]
-DESCRIPTION: [Detailed description]
+TITLE: [Title]
+DESCRIPTION: [Description]
 ACCEPTANCE CRITERIA:
 - [Criterion 1]
 - [Criterion 2]
 - [Criterion 3]
-...
-
-${numberOfStories > 1 ? 'STORY 2:' : ''}
-${numberOfStories > 1 ? 'TITLE: [User story title]' : ''}
-${numberOfStories > 1 ? 'DESCRIPTION: [Detailed description]' : ''}
-${numberOfStories > 1 ? 'ACCEPTANCE CRITERIA:' : ''}
-${numberOfStories > 1 ? '- [Criterion 1]' : ''}
-${numberOfStories > 1 ? '- [Criterion 2]' : ''}
-${numberOfStories > 1 ? '- [Criterion 3]' : ''}
-${numberOfStories > 1 ? '...' : ''}
-
-${numberOfStories > 2 ? '...' : ''}
+${numberOfStories > 1 ? '\nSTORY 2:' : ''}
 `;
   }
 
