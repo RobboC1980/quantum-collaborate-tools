@@ -39,32 +39,22 @@ const testUser2 = {
 
 // Test data
 const testProject = {
-  title: 'Test Project',
-  description: 'A test project for verification',
-  status: 'active',
-  priority: 'medium',
-  progress: 0,
-  startDate: new Date(),
-  targetDate: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000), // 30 days from now
+  name: 'Test Project',
+  description: 'A test project for verification'
 };
 
 const testEpic = {
   title: 'Test Epic',
   description: 'A test epic for verification',
-  status: 'planning',
-  priority: 'medium',
-  progress: 0,
+  status: 'planning'
 };
 
 const testStory = {
   title: 'Test Story',
   description: 'A test story for verification',
-  type: 'feature',
-  status: 'backlog',
+  status: 'todo',
   priority: 'medium',
-  points: 3,
-  businessValue: 5,
-  riskLevel: 'low',
+  points: 3
 };
 
 // Test file for storage
@@ -177,11 +167,9 @@ const verifySupabaseIntegration = async () => {
     
     // 2.1 Create a project as user 1
     const projectData = {
-      ...testProject,
-      id: uuidv4(),
-      owner_id: user1.id,
-      created_at: new Date(),
-      updated_at: new Date()
+      name: testProject.name,
+      description: testProject.description,
+      owner_id: user1.id
     };
     
     const { data: projectResult, error: projectError } = await user1Client
@@ -195,12 +183,11 @@ const verifySupabaseIntegration = async () => {
     
     // 2.2 Create an epic as user 1
     const epicData = {
-      ...testEpic,
-      id: uuidv4(),
+      title: testEpic.title,
+      description: testEpic.description,
+      status: testEpic.status,
       project_id: projectResult.id,
-      owner_id: user1.id,
-      created_at: new Date(),
-      updated_at: new Date()
+      owner_id: user1.id
     };
     
     const { data: epicResult, error: epicError } = await user1Client
@@ -214,12 +201,14 @@ const verifySupabaseIntegration = async () => {
     
     // 2.3 Create a story as user 1
     const storyData = {
-      ...testStory,
-      id: uuidv4(),
+      title: testStory.title,
+      description: testStory.description,
+      status: testStory.status,
+      priority: testStory.priority,
+      points: testStory.points,
       epic_id: epicResult.id,
       reporter_id: user1.id,
-      created_at: new Date(),
-      updated_at: new Date()
+      assignee_id: user1.id
     };
     
     const { data: storyResult, error: storyError } = await user1Client
