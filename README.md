@@ -1,3 +1,77 @@
+# Quantum Collaborate Tools
+
+A collaborative application with AI integration using Qwen API.
+
+## Getting Started
+
+### Prerequisites
+
+- Node.js (v16 or higher)
+- npm (v7 or higher)
+
+### Installation
+
+1. Clone the repository
+2. Install dependencies:
+   ```
+   npm install
+   ```
+
+3. Create a `.env` file in the root directory with your Qwen API key:
+   ```
+   VITE_QWEN_API_KEY=your-qwen-api-key
+   ```
+
+### Starting the Application
+
+#### Option 1: Using the Batch Script (Windows CMD)
+
+```
+.\start-app.bat
+```
+
+#### Option 2: Using the PowerShell Script (Windows PowerShell)
+
+```
+.\start-app.ps1
+```
+
+#### Option 3: Using npm directly
+
+```
+npm run start
+```
+
+This will start both:
+- The API proxy server on port 3001
+- The Vite development server on port 3000
+
+### Troubleshooting
+
+If you encounter port conflicts, the startup scripts will attempt to terminate processes using the required ports (3000, 3001, 3002, 3003, 3004).
+
+If you still encounter issues:
+1. Manually check for processes using the required ports:
+   ```
+   netstat -ano | findstr :3000
+   netstat -ano | findstr :3001
+   ```
+
+2. Terminate the processes manually:
+   ```
+   taskkill /F /PID <process_id>
+   ```
+
+## Features
+
+- React frontend with Shadcn UI components
+- Integration with Qwen AI API
+- API proxy server for secure communication
+
+## License
+
+This project is licensed under the MIT License - see the LICENSE file for details.
+
 # Welcome to your Lovable project
 
 ## Project info

@@ -1,7 +1,7 @@
 // AI model configuration options
 
-export type AIProvider = 'openai' | 'qwen';
-export type AIModel = 'gpt-4o' | 'gpt-4-turbo' | 'gpt-3.5-turbo' | 'qwen-max' | 'qwen-plus';
+export type AIProvider = 'qwen';
+export type AIModel = 'qwen-max' | 'qwen-plus' | 'qwen-turbo' | 'qwen-lite';
 
 export interface AIModelConfig {
   provider: AIProvider;
@@ -15,12 +15,11 @@ export interface AIModelConfig {
 // Load preferences from localStorage if available
 const loadSavedConfig = (): {provider: AIProvider, model: AIModel} => {
   try {
-    const savedProvider = localStorage.getItem('ai_provider');
     const savedModel = localStorage.getItem('ai_model');
     
-    if (savedProvider && savedModel) {
+    if (savedModel) {
       return {
-        provider: savedProvider as AIProvider,
+        provider: 'qwen',
         model: savedModel as AIModel
       };
     }
@@ -37,17 +36,15 @@ const loadSavedConfig = (): {provider: AIProvider, model: AIModel} => {
 
 // Default AI configuration
 export const defaultAIConfig = {
-  provider: loadSavedConfig().provider as AIProvider,
+  provider: 'qwen' as AIProvider,
   model: loadSavedConfig().model as AIModel,
   temperature: 0.7,
 };
 
 // Save AI config to localStorage
-export const saveAIConfig = (provider: AIProvider, model: AIModel) => {
+export const saveAIConfig = (model: AIModel) => {
   try {
-    localStorage.setItem('ai_provider', provider);
     localStorage.setItem('ai_model', model);
-    defaultAIConfig.provider = provider;
     defaultAIConfig.model = model;
     return true;
   } catch (error) {
@@ -58,58 +55,45 @@ export const saveAIConfig = (provider: AIProvider, model: AIModel) => {
 
 // AI model configurations
 export const AI_MODELS: Record<AIModel, AIModelConfig> = {
-  'gpt-4o': {
-    provider: 'openai',
-    model: 'gpt-4o',
-    description: 'OpenAI GPT-4o - Advanced AI model with strong reasoning capabilities',
-    maxTokens: 8192,
-    capabilities: ['Text generation', 'Reasoning', 'Code generation'],
-    baseTokenCost: 5.0,
-  },
-  'gpt-4-turbo': {
-    provider: 'openai',
-    model: 'gpt-4-turbo',
-    description: 'OpenAI GPT-4 Turbo - Powerful model with large context window',
-    maxTokens: 128000,
-    capabilities: ['Text generation', 'Reasoning', 'Code generation'],
-    baseTokenCost: 10.0,
-  },
-  'gpt-3.5-turbo': {
-    provider: 'openai',
-    model: 'gpt-3.5-turbo',
-    description: 'OpenAI GPT-3.5 Turbo - Fast and efficient AI model',
-    maxTokens: 16000,
-    capabilities: ['Text generation', 'Basic reasoning'],
-    baseTokenCost: 0.5,
-  },
   'qwen-max': {
     provider: 'qwen',
     model: 'qwen-max',
     description: 'Qwen 2.5 Max - Advanced model with strong capabilities',
     maxTokens: 32000,
-    capabilities: ['Text generation', 'Reasoning', 'Code generation'],
+    capabilities: ['Text generation', 'Reasoning', 'Code generation', 'Complex tasks'],
     baseTokenCost: 3.0,
   },
   'qwen-plus': {
     provider: 'qwen',
     model: 'qwen-plus',
-    description: 'Qwen 2.5 Plus - Efficient model for general tasks',
+    description: 'Qwen 2.5 Plus - Balanced model for general tasks',
     maxTokens: 16000,
-    capabilities: ['Text generation', 'Basic reasoning'],
+    capabilities: ['Text generation', 'Reasoning', 'Code generation'],
     baseTokenCost: 1.0,
   },
+  'qwen-turbo': {
+    provider: 'qwen',
+    model: 'qwen-turbo',
+    description: 'Qwen 2.5 Turbo - Fast model for simpler tasks',
+    maxTokens: 8000,
+    capabilities: ['Text generation', 'Basic reasoning'],
+    baseTokenCost: 0.5,
+  },
+  'qwen-lite': {
+    provider: 'qwen',
+    model: 'qwen-lite',
+    description: 'Qwen 2.5 Lite - Lightweight and efficient model',
+    maxTokens: 4096,
+    capabilities: ['Text generation', 'Basic tasks'],
+    baseTokenCost: 0.25,
+  }
 };
 
 export const AI_PROVIDERS = {
-  'openai': {
-    name: 'OpenAI',
-    description: 'Advanced AI models from OpenAI',
-    models: ['gpt-4o', 'gpt-4-turbo', 'gpt-3.5-turbo'],
-  },
   'qwen': {
     name: 'Qwen',
     description: 'AI models from Alibaba Cloud',
-    models: ['qwen-max', 'qwen-plus'],
+    models: ['qwen-max', 'qwen-plus', 'qwen-turbo', 'qwen-lite'],
   },
 };
 

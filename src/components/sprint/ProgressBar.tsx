@@ -49,9 +49,6 @@ const ProgressBar: React.FC<ProgressBarProps> = ({
       <div 
         className={`${heightClasses[height]} ${colorClasses[color]} rounded-full progress-bar`} 
         style={{ width: `${percentage}%` }}
-        aria-valuenow={Math.round(percentage)}
-        aria-valuemin={0}
-        aria-valuemax={100}
         role="progressbar"
       />
     </div>

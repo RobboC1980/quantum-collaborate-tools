@@ -2,6 +2,14 @@
 import { serve } from 'https://deno.land/std@0.177.0/http/server.ts';
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.29.0';
 
+// Define types for permissions
+interface Permission {
+  id: string;
+  category: string;
+  action: string;
+  [key: string]: any; // For any other properties
+}
+
 serve(async (req) => {
   try {
     // Get the user's token from the Authorization header
@@ -134,7 +142,7 @@ serve(async (req) => {
     
     // Get permissions for each role
     let hasPermission = false;
-    let permissionDetails = null;
+    let permissionDetails: Permission | null = null;
     
     for (const userRole of userRoles) {
       const roleId = userRole.role_id;
@@ -154,19 +162,28 @@ serve(async (req) => {
       
       // Check if any permission matches the required one or if the role has wildcard permission
       for (const rp of rolePermissions) {
-        const permission = rp.permissions;
+        // Skip if permissions is not available
+        if (!rp.permissions) continue;
+        
+        // Handle both array and object responses from Supabase
+        const permObj = Array.isArray(rp.permissions) 
+          ? (rp.permissions[0] as Permission) 
+          : (rp.permissions as Permission);
+        
+        // Skip if we couldn't get a valid permission object
+        if (!permObj || typeof permObj !== 'object') continue;
         
         // Wildcard check
-        if (permission.id === '*' || permission.category === '*' || permission.action === '*') {
+        if (permObj.id === '*' || permObj.category === '*' || permObj.action === '*') {
           hasPermission = true;
-          permissionDetails = permission;
+          permissionDetails = permObj;
           break;
         }
         
         // Exact permission match
-        if (permission.id === requiredPermission) {
+        if (permObj.id === requiredPermission) {
           hasPermission = true;
-          permissionDetails = permission;
+          permissionDetails = permObj;
           break;
         }
         
@@ -175,11 +192,11 @@ serve(async (req) => {
           const [reqCategory, reqAction] = requiredPermission.split(':');
           
           if (
-            (permission.category === reqCategory && permission.action === reqAction) ||
-            (permission.category === reqCategory && permission.action === 'manage')
+            (permObj.category === reqCategory && permObj.action === reqAction) ||
+            (permObj.category === reqCategory && permObj.action === 'manage')
           ) {
             hasPermission = true;
-            permissionDetails = permission;
+            permissionDetails = permObj;
             break;
           }
         }
@@ -227,7 +244,7 @@ serve(async (req) => {
     return new Response(
       JSON.stringify({
         error: 'Internal server error',
-        message: error.message,
+        message: error instanceof Error ? error.message : String(error),
       }),
       {
         status: 500,

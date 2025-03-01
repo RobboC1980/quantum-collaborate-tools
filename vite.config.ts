@@ -10,7 +10,7 @@ const qwenApiKey = process.env.VITE_QWEN_API_KEY || 'sk-cca2c0e57dd54ad19e4a8ef8
 export default defineConfig(({ mode }) => ({
   server: {
     host: "::",
-    port: 8080
+    port: 3000
   },
   plugins: [
     react(),

@@ -10,7 +10,8 @@
     "lint": "eslint .",
     "preview": "vite preview",
     "proxy": "node api-server.js",
-    "start": "concurrently -n \"API,VITE\" -c \"green,blue\" \"npm run proxy\" \"npm run dev\""
+    "start": "concurrently -n \"API,VITE\" -c \"green,blue\" \"npm run proxy\" \"npm run dev\"",
+    "dev:proxy": "vite --port=3000 & node api-server.js"
   },
   "dependencies": {
     "@hookform/resolvers": "^3.9.0",
@@ -41,12 +42,12 @@
     "@radix-ui/react-toggle": "^1.1.0",
     "@radix-ui/react-toggle-group": "^1.1.0",
     "@radix-ui/react-tooltip": "^1.1.4",
-    "@supabase/supabase-js": "^2.49.1",
     "@tanstack/react-query": "^5.66.11",
     "class-variance-authority": "^0.7.1",
     "clsx": "^2.1.1",
     "cmdk": "^1.0.0",
     "date-fns": "^3.6.0",
+    "dotenv": "^16.4.7",
     "embla-carousel-react": "^8.3.0",
     "input-otp": "^1.2.4",
     "lucide-react": "^0.462.0",
@@ -68,6 +69,7 @@
   },
   "devDependencies": {
     "@eslint/js": "^9.9.0",
+    "@supabase/supabase-js": "^2.49.1",
     "@tailwindcss/typography": "^0.5.15",
     "@types/cors": "^2.8.17",
     "@types/express": "^5.0.0",

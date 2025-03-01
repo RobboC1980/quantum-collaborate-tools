@@ -6,11 +6,18 @@
     "esModuleInterop": true,
     "strict": true,
     "lib": ["es2021", "dom"],
-    "types": ["@supabase/supabase-js"],
-    "typeRoots": ["."],
-    "skipLibCheck": true
+    "typeRoots": [".", "../node_modules/@types", "../../node_modules/@types"],
+    "skipLibCheck": true,
+    "noImplicitAny": false,
+    "allowJs": true,
+    "checkJs": false,
+    "isolatedModules": true
   },
   "include": [
-    "**/*.ts"
+    "**/*.ts",
+    "**/*.d.ts"
+  ],
+  "exclude": [
+    "node_modules"
   ]
 } 

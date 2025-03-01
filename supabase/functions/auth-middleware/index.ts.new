@@ -1,0 +1,124 @@
+// Use triple-slash reference directive to include the type definitions
+/// <reference path="../deno-types.d.ts" />
+
+// Follow this setup guide to integrate the Deno runtime and Supabase functions in your project:
+// https://supabase.com/docs/guides/functions/getting-started
+
+// @ts-ignore: Ignoring error for ESM import from URL
+import { serve } from "https://deno.land/std@0.168.0/http/server.ts"
+// @ts-ignore: Ignoring error for ESM import from URL
+import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.23.0'
+
+interface Permission {
+  id: string;
+  name: string;
+  description?: string;
+}
+
+const corsHeaders = {
+  'Access-Control-Allow-Origin': '*',
+  'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
+  'Access-Control-Allow-Methods': 'GET, POST, PUT, DELETE, OPTIONS',
+};
+
+serve(async (req) => {
+  // Handle CORS preflight requests
+  if (req.method === 'OPTIONS') {
+    return new Response('ok', { headers: corsHeaders });
+  }
+
+  try {
+    // Get the authorization header from the request
+    const authHeader = req.headers.get('Authorization');
+    if (!authHeader) {
+      return new Response(
+        JSON.stringify({ error: 'No authorization header provided' }),
+        { status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
+    }
+
+    // Create a Supabase client with the auth header
+    const supabaseClient = createClient(
+      // Supabase API URL - env var exported by default when deployed to Supabase
+      Deno.env.get('SUPABASE_URL') ?? '',
+      // Supabase API ANON KEY - env var exported by default when deployed to Supabase
+      Deno.env.get('SUPABASE_ANON_KEY') ?? '',
+      // Create client with Auth header set from request
+      { global: { headers: { Authorization: authHeader } } }
+    );
+
+    // Get the user's profile to check permissions
+    const { data: { user }, error: userError } = await supabaseClient.auth.getUser();
+    
+    if (userError || !user) {
+      return new Response(
+        JSON.stringify({ error: userError?.message || 'User not found' }),
+        { status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
+    }
+
+    // Get the request body to check what permission is required
+    const requestData = await req.json();
+    const { requiredPermission } = requestData;
+
+    if (!requiredPermission) {
+      return new Response(
+        JSON.stringify({ error: 'Required permission not specified' }),
+        { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
+    }
+
+    // Get the user's profile with role information
+    const { data: profile, error: profileError } = await supabaseClient
+      .from('profiles')
+      .select('*, roles(*, permissions(*))')
+      .eq('id', user.id)
+      .single();
+
+    if (profileError || !profile) {
+      return new Response(
+        JSON.stringify({ error: profileError?.message || 'Profile not found' }),
+        { status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
+    }
+
+    // Check if the user has the required permission
+    let hasPermission = false;
+    
+    if (profile.roles && profile.roles.permissions) {
+      const permissions = profile.roles.permissions as Permission[];
+      hasPermission = permissions.some(permission => permission.name === requiredPermission);
+    }
+
+    if (!hasPermission) {
+      return new Response(
+        JSON.stringify({ 
+          error: 'Unauthorized. You do not have the required permission.',
+          requiredPermission
+        }),
+        { status: 403, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
+    }
+
+    // If the user has the required permission, return success
+    return new Response(
+      JSON.stringify({ 
+        success: true, 
+        message: 'Authorization successful',
+        user: {
+          id: user.id,
+          email: user.email,
+          role: profile.roles ? profile.roles.name : null
+        }
+      }),
+      { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+    );
+  } catch (error) {
+    console.error(error);
+    
+    return new Response(
+      JSON.stringify({ error: error instanceof Error ? error.message : String(error) }),
+      { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+    );
+  }
+}); 

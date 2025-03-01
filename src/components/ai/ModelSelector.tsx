@@ -45,7 +45,7 @@ export function ModelSelector({ onModelChange }: ModelSelectorProps) {
     
     // Update the AI client
     try {
-      switchAiModel(provider, newModel);
+      switchAiModel(newModel);
       if (onModelChange) {
         onModelChange(provider, newModel);
       }

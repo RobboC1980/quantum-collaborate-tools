@@ -1,7 +1,12 @@
+// Use triple-slash reference directive to include the type definitions
+/// <reference path="../deno-types.d.ts" />
+
 // Follow this setup guide to integrate the Deno runtime and Supabase functions in your project:
 // https://supabase.com/docs/guides/functions/getting-started
 
+// @ts-ignore: Ignoring error for ESM import from URL
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts"
+// @ts-ignore: Ignoring error for ESM import from URL
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.23.0'
 
 const corsHeaders = {
@@ -270,4 +275,4 @@ serve(async (req) => {
       { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
     );
   }
-});
+}); 
