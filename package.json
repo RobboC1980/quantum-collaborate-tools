@@ -12,7 +12,11 @@
     "deploy-exec-sql": "node deploy-exec-sql-function.js",
     "check-tables": "node check-tables.js",
     "verify-tables": "node verify-tables.js",
-    "create-tables": "node create-tables-script.js"
+    "create-tables": "node create-tables-script.js",
+    "deploy-check-functions": "node deploy-check-functions.js",
+    "fix-env": "node fix-env.js",
+    "check-with-fixed-env": "node run-check-with-fixed-env.js",
+    "deploy-final-setup": "node deploy-final-setup.js"
   },
   "dependencies": {
     "@supabase/supabase-js": "^2.39.3",

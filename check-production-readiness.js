@@ -24,14 +24,25 @@ const execAsync = promisify(exec);
 // Load environment variables
 dotenv.config();
 
-const SUPABASE_URL = process.env.VITE_SUPABASE_URL;
-const SUPABASE_SERVICE_ROLE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY;
+// Check for required environment variables
+// Prioritize VITE_SUPABASE_URL since it's working
+const SUPABASE_URL = process.env.VITE_SUPABASE_URL || process.env.SUPABASE_URL;
+// Prioritize VITE_SUPABASE_SERVICE_KEY since it's working
+const SUPABASE_SERVICE_ROLE_KEY = process.env.VITE_SUPABASE_SERVICE_KEY || process.env.SUPABASE_SERVICE_ROLE_KEY;
 
-if (!SUPABASE_URL || !SUPABASE_SERVICE_ROLE_KEY) {
-  console.error(chalk.red('❌ Error: Missing required environment variables.'));
-  console.log('Please ensure you have the following in your .env file:');
-  console.log('- VITE_SUPABASE_URL');
-  console.log('- SUPABASE_SERVICE_ROLE_KEY');
+// Add debugging information
+console.log(chalk.blue('Using Supabase URL:'), SUPABASE_URL);
+console.log(chalk.blue('Service Key Available:'), !!SUPABASE_SERVICE_ROLE_KEY);
+
+if (!SUPABASE_URL) {
+  console.error(chalk.red('Error: SUPABASE_URL or VITE_SUPABASE_URL environment variable is required.'));
+  console.error(chalk.yellow('Make sure it is defined in your .env file.'));
+  process.exit(1);
+}
+
+if (!SUPABASE_SERVICE_ROLE_KEY) {
+  console.error(chalk.red('Error: VITE_SUPABASE_SERVICE_KEY or SUPABASE_SERVICE_ROLE_KEY environment variable is required.'));
+  console.error(chalk.yellow('Make sure it is defined in your .env file.'));
   process.exit(1);
 }
 
@@ -43,18 +54,22 @@ const REQUIRED_TABLES = ['profiles', 'projects', 'epics', 'stories'];
 
 // Required RLS policies
 const REQUIRED_RLS_POLICIES = [
-  'projects_select_policy',
-  'projects_insert_policy',
-  'projects_update_policy',
-  'projects_delete_policy',
-  'epics_select_policy',
-  'epics_insert_policy',
-  'epics_update_policy',
-  'epics_delete_policy',
-  'stories_select_policy',
-  'stories_insert_policy',
-  'stories_update_policy',
-  'stories_delete_policy'
+  'Users can view their own projects',
+  'Users can create their own projects',
+  'Users can update their own projects',
+  'Users can delete their own projects',
+  'Users can view epics in their projects',
+  'Users can create epics in their projects',
+  'Users can update epics in their projects',
+  'Users can delete epics in their projects',
+  'Users can view stories in their epics or projects',
+  'Users can create stories in their epics or projects',
+  'Users can update stories in their epics or projects',
+  'Users can delete stories in their epics or projects',
+  'Users can read their own files',
+  'Users can upload their own files',
+  'Users can update their own files',
+  'Users can delete their own files'
 ];
 
 // Required storage buckets
