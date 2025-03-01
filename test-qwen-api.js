@@ -6,7 +6,7 @@ async function testQwenApi() {
     
     const response = await axios({
       method: 'post',
-      url: 'http://localhost:3001/api/qwen/chat/completions',
+      url: 'http://localhost:3002/api/qwen/chat/completions',
       headers: {
         'Content-Type': 'application/json'
       },

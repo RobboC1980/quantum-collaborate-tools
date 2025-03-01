@@ -8,7 +8,7 @@ const QWEN_API_KEY = import.meta.env.VITE_QWEN_API_KEY || 'dummy-key-for-develop
 // Initialize Qwen client using OpenAI-compatible SDK
 const qwenClient = new OpenAI({
   apiKey: QWEN_API_KEY,
-  baseURL: 'http://localhost:3001/api/qwen',
+  baseURL: 'http://localhost:3002/api/qwen',
   dangerouslyAllowBrowser: true
 });
 
@@ -26,10 +26,10 @@ const handleApiError = (error: any) => {
     const proxyError = "Unable to connect to AI proxy server. Please ensure the proxy server is running by executing 'npm run proxy' in a separate terminal window or using the start-app.bat file.";
     toast.error(proxyError);
     console.error("=== PROXY SERVER CONNECTION ERROR ===");
-    console.error("The application cannot connect to the proxy server at http://localhost:3001");
+    console.error("The application cannot connect to the proxy server at http://localhost:3002");
     console.error("Please make sure:");
     console.error("1. You're running the proxy server with 'npm run proxy'");
-    console.error("2. No other applications are using port 3001");
+    console.error("2. No other applications are using port 3002");
     console.error("3. There are no firewall or antivirus blocking the connection");
     console.error("Try running the 'start-app.bat' file to automatically handle port conflicts");
     throw new Error(proxyError);

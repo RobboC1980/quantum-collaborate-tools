@@ -1,25 +1,28 @@
 import { defineConfig } from "vite";
 import react from "@vitejs/plugin-react-swc";
 import path from "path";
-import { componentTagger } from "lovable-tagger";
-
-// Load environment variables
-const qwenApiKey = process.env.VITE_QWEN_API_KEY || 'sk-cca2c0e57dd54ad19e4a8ef8c0ef23e2';
 
 // https://vitejs.dev/config/
-export default defineConfig(({ mode }) => ({
+export default defineConfig({
   server: {
     host: "::",
-    port: 3000
+    port: 3000,
+    proxy: {
+      '/api/qwen': {
+        target: 'http://localhost:3002',
+        changeOrigin: true,
+        secure: false
+      }
+    }
   },
-  plugins: [
-    react(),
-    mode === 'development' &&
-    componentTagger(),
-  ].filter(Boolean),
+  plugins: [react()],
   resolve: {
     alias: {
       "@": path.resolve(__dirname, "./src"),
     },
+    dedupe: ['react', 'react-dom']
   },
-}));
+  define: {
+    'process.env': {}
+  }
+});

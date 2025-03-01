@@ -110,7 +110,7 @@ QuantumScribe includes several AI-powered features:
 2. Look at the proxy server logs for API request/response details
 3. Use the health check endpoint to verify the proxy server is running:
    ```
-   http://localhost:3001/api/health
+   http://localhost:3002/api/health
    ```
 
 ## Production Deployment

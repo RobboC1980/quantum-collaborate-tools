@@ -70,7 +70,7 @@ If you see an error like `ERR_CONNECTION_REFUSED` when using AI features:
 
 1. Verify the proxy server is running by visiting:
    ```
-   http://localhost:3001/api/health
+   http://localhost:3002/api/health
    ```
    You should see `{"status":"ok"}`
 
@@ -82,7 +82,7 @@ If you see an error like `ERR_CONNECTION_REFUSED` when using AI features:
 
 The integration works by:
 
-1. The frontend makes requests to a local proxy server (http://localhost:3001)
+1. The frontend makes requests to a local proxy server (http://localhost:3002)
 2. The proxy server forwards requests to the Qwen API (https://dashscope.aliyuncs.com)
 3. This approach avoids CORS issues that would occur with direct browser-to-Qwen API calls
 

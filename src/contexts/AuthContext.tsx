@@ -50,7 +50,7 @@ const MOCK_PROFILE = {
 };
 
 // Flag to enable mock authentication (set to true for development)
-const USE_MOCK_AUTH = true;
+const USE_MOCK_AUTH = false;
 
 export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const [session, setSession] = useState<Session | null>(null);

@@ -8,7 +8,7 @@ import { fileURLToPath } from 'url';
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 const app = express();
-const PORT = 3001; // Hard-code port 3001 to match client expectations
+const PORT = 3002; // Changed from 3001 to 3002 to avoid conflicts with Vite
 
 // Enable CORS and JSON parsing
 app.use(cors());

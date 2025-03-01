@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { 
   Dialog, 
   DialogContent, 
@@ -35,11 +35,22 @@ import {
   Sparkles,
   Loader2
 } from 'lucide-react';
-import { StoryWithRelations, StoryType, StoryStatus, StoryPriority, RiskLevel } from '@/types/story';
-import { User as UserType, mockUsers } from '@/types/user';
+import { StoryType, StoryStatus, StoryPriority, RiskLevel } from '@/types/story';
+import { User as UserType } from '@/types/user';
 import StoryGenerator from '@/components/ai/StoryGenerator';
 import { aiService } from '@/services/ai-service';
 import { useToast } from '@/components/ui/use-toast';
+import { supabase } from '@/integrations/supabase/client';
+import { useAuth } from '@/contexts/AuthContext';
+import { Tables } from '@/integrations/supabase/types';
+
+// Define types for database tables
+type ProfileData = Tables<'profiles'>;
+type EpicData = Tables<'epics'>;
+type SprintData = Tables<'sprints'>;
+type StoryData = Tables<'stories'>;
+type StoryTagData = Tables<'story_tags'>;
+type AcceptanceCriteriaData = Tables<'acceptance_criteria'>;
 
 interface StoryDetailDialogProps {
   story?: StoryWithRelations;
@@ -48,74 +59,382 @@ interface StoryDetailDialogProps {
   onSave?: (story: StoryWithRelations) => void;
 }
 
+// Add this type definition at the top of the file
+interface AcceptanceCriterion {
+  description: string;
+  satisfied?: boolean;
+}
+
+// Define the User type
+interface User {
+  id: string;
+  fullName: string;
+  avatarUrl?: string;
+  email: string;
+  role?: string;
+}
+
+// Update the StoryWithRelations interface to use AcceptanceCriterion
+interface StoryWithRelations {
+  id: string;
+  title: string;
+  description: string;
+  type: StoryType;
+  status: StoryStatus;
+  priority: StoryPriority;
+  points: number;
+  epicId?: string;
+  sprintId?: string;
+  assigneeId?: string;
+  reporterId: string;
+  tags: string[];
+  acceptanceCriteria: AcceptanceCriterion[];
+  attachments: string[];
+  createdAt: Date;
+  updatedAt: Date;
+  dependencies: string[];
+  childStoryIds: string[];
+  businessValue: number;
+  riskLevel: RiskLevel;
+  epic?: {
+    id: string;
+    name: string;
+  };
+  sprint?: {
+    id: string;
+    name: string;
+  };
+  assignee?: User;
+  reporter: User;
+}
+
+// Update the FormData type
+interface FormData {
+  title: string;
+  description: string;
+  type: StoryType;
+  status: StoryStatus;
+  priority: StoryPriority;
+  points: number;
+  epicId?: string;
+  sprintId?: string;
+  assigneeId?: string;
+  reporterId: string;
+  tags: string[];
+  acceptanceCriteria: AcceptanceCriterion[];
+  dependencies: string[];
+  businessValue: number;
+  riskLevel: RiskLevel;
+}
+
 const StoryDetailDialog: React.FC<StoryDetailDialogProps> = ({
   story,
   isOpen,
   onClose,
   onSave
 }) => {
-  const isNewStory = !story;
-  const [activeTab, setActiveTab] = useState('details');
   const { toast } = useToast();
+  const { user } = useAuth();
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [showAiGenerator, setShowAiGenerator] = useState(false);
+  const [users, setUsers] = useState<UserType[]>([]);
+  const [epics, setEpics] = useState<EpicData[]>([]);
+  const [sprints, setSprints] = useState<SprintData[]>([]);
+  const [newTag, setNewTag] = useState('');
+  const [formData, setFormData] = useState<FormData>({
+    title: story?.title || '',
+    description: story?.description || '',
+    type: story?.type || 'enhancement',
+    status: story?.status || 'backlog',
+    priority: story?.priority || 'medium',
+    points: story?.points || 0,
+    epicId: story?.epicId,
+    sprintId: story?.sprintId,
+    assigneeId: story?.assigneeId,
+    reporterId: story?.reporterId || user?.id || '',
+    tags: story?.tags || [],
+    acceptanceCriteria: story?.acceptanceCriteria || [],
+    dependencies: story?.dependencies || [],
+    businessValue: story?.businessValue || 5,
+    riskLevel: story?.riskLevel || 'low'
+  });
   
-  // For a new story, create a default template
-  const [formData, setFormData] = useState<Partial<StoryWithRelations>>(
-    story || {
-      title: '',
-      description: '',
-      type: 'enhancement' as StoryType,
-      status: 'backlog' as StoryStatus,
-      priority: 'medium' as StoryPriority,
-      points: 0,
-      tags: [],
-      acceptanceCriteria: [''],
-      businessValue: 5,
-      riskLevel: 'low' as RiskLevel,
-      childStoryIds: [],
-      dependencies: [],
-      assigneeId: 'unassigned',
-      epicId: 'none',
-      sprintId: 'none',
-      reporterId: mockUsers[0].id, // Default to first user for now
+  // Initialize form data when story changes
+  useEffect(() => {
+    if (story) {
+      setFormData({
+        ...story
+      });
+    } else {
+      // Reset form for new story
+      setFormData({
+        title: '',
+        description: '',
+        type: 'enhancement',
+        status: 'backlog',
+        priority: 'medium',
+        points: 0,
+        epicId: undefined,
+        sprintId: undefined,
+        assigneeId: undefined,
+        reporterId: user?.id,
+        tags: [],
+        acceptanceCriteria: [],
+        businessValue: 5,
+        riskLevel: 'low',
+        dependencies: []
+      });
     }
-  );
-
+  }, [story, user?.id]);
+  
+  // Fetch users, epics, and sprints when dialog opens
+  useEffect(() => {
+    const fetchData = async () => {
+      if (isOpen) {
+        try {
+          // Fetch users
+          const { data: userData, error: userError } = await supabase
+            .from('profiles')
+            .select('*');
+          
+          if (userError) throw userError;
+          
+          if (userData) {
+            // Convert ProfileData to UserType
+            const mappedUsers: UserType[] = userData.map(profile => ({
+              id: profile.id,
+              fullName: profile.full_name || '',
+              avatarUrl: profile.avatar_url || undefined,
+              email: '',
+              role: profile.role || undefined
+            }));
+            setUsers(mappedUsers);
+          }
+        } catch (userError) {
+          console.error('Error fetching users:', userError);
+          toast({
+            title: 'Error',
+            description: 'Failed to load users. Please try again.',
+          });
+        }
+        
+        try {
+          // Fetch epics
+          const { data: epicData, error: epicError } = await supabase
+            .from('epics')
+            .select('id, title');
+          
+          if (epicError) throw epicError;
+          
+          if (epicData) {
+            setEpics(epicData as EpicData[]);
+          }
+        } catch (epicError) {
+          console.error('Error fetching epics:', epicError);
+          toast({
+            title: 'Error',
+            description: 'Failed to load epics. Please try again.',
+          });
+        }
+        
+        // Note: Sprints table doesn't exist in the database, so we're not fetching sprints
+        // Setting empty array for sprints
+        setSprints([]);
+      }
+    };
+    
+    fetchData();
+  }, [isOpen, toast]);
+  
   const handleChange = (field: string, value: unknown) => {
-    setFormData({
-      ...formData,
+    setFormData(prev => ({
+      ...prev,
       [field]: value
-    });
+    }));
   };
+  
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setIsSubmitting(true);
 
-  const handleSubmit = () => {
-    if (onSave && formData.title) {
-      // In a real app, we would create or update the story in the database
-      // For now, we'll just mock this with the existing story data and form updates
-      const updatedStory = {
-        ...(story || {
-          id: `QS-${Math.floor(Math.random() * 1000)}`,
-          createdAt: new Date(),
-          attachments: [],
-        }),
-        ...formData,
-        updatedAt: new Date()
-      } as StoryWithRelations;
+    try {
+      // Prepare story data for Supabase
+      const storyData = {
+        title: formData.title,
+        description: formData.description,
+        type: formData.type,
+        status: formData.status,
+        priority: formData.priority,
+        points: formData.points,
+        epic_id: formData.epicId || null,
+        sprint_id: formData.sprintId || null,
+        assignee_id: formData.assigneeId || null,
+        reporter_id: formData.reporterId,
+        business_value: formData.businessValue,
+        risk_level: formData.riskLevel,
+        updated_at: new Date().toISOString()
+      };
+
+      let storyId = story?.id;
+
+      // Insert or update the story in Supabase
+      if (!storyId) {
+        // Create new story
+        const { data: newStory, error } = await supabase
+          .from('stories')
+          .insert({ ...storyData, created_at: new Date().toISOString() })
+          .select('id')
+          .single();
+
+        if (error) throw error;
+        storyId = newStory.id;
+      } else {
+        // Update existing story
+        const { error } = await supabase
+          .from('stories')
+          .update(storyData)
+          .eq('id', storyId);
+
+        if (error) throw error;
+      }
+
+      // Handle tags
+      if (formData.tags && formData.tags.length > 0) {
+        // Delete existing tags
+        await supabase
+          .from('story_tags')
+          .delete()
+          .eq('story_id', storyId);
+
+        // Insert new tags
+        const tagData = formData.tags.map(tag => ({
+          story_id: storyId,
+          tag: tag
+        }));
+
+        const { error: tagError } = await supabase
+          .from('story_tags')
+          .insert(tagData);
+
+        if (tagError) throw tagError;
+      }
+
+      // Handle acceptance criteria
+      if (formData.acceptanceCriteria && formData.acceptanceCriteria.length > 0) {
+        // Delete existing criteria
+        await supabase
+          .from('acceptance_criteria')
+          .delete()
+          .eq('story_id', storyId);
+
+        // Insert new criteria
+        const criteriaData = formData.acceptanceCriteria.map(criteria => ({
+          story_id: storyId,
+          criteria: criteria.description,
+          is_satisfied: criteria.satisfied || false
+        }));
+
+        const { error: criteriaError } = await supabase
+          .from('acceptance_criteria')
+          .insert(criteriaData);
+
+        if (criteriaError) throw criteriaError;
+      }
+
+      // Fetch the complete story with relations
+      const { data: completeStory, error: fetchError } = await supabase
+        .from('stories')
+        .select(`
+          *,
+          epic:epic_id (*),
+          sprint:sprint_id (*),
+          assignee:profiles!stories_assignee_id_fkey(*),
+          reporter:profiles!stories_reporter_id_fkey(*)
+        `)
+        .eq('id', storyId)
+        .single();
+
+      if (fetchError) throw fetchError;
+
+      // Transform the data to match StoryWithRelations format
+      const transformedStory: StoryWithRelations = {
+        id: completeStory.id,
+        title: completeStory.title,
+        description: completeStory.description || '',
+        type: completeStory.type as StoryType,
+        status: completeStory.status as StoryStatus,
+        priority: completeStory.priority as StoryPriority,
+        points: completeStory.points || 0,
+        epicId: completeStory.epic_id || undefined,
+        sprintId: completeStory.sprint_id || undefined,
+        assigneeId: completeStory.assignee_id || undefined,
+        reporterId: completeStory.reporter_id,
+        tags: formData.tags || [],
+        acceptanceCriteria: formData.acceptanceCriteria || [],
+        attachments: [],
+        createdAt: new Date(completeStory.created_at),
+        updatedAt: new Date(completeStory.updated_at),
+        dependencies: formData.dependencies || [],
+        childStoryIds: [],
+        businessValue: completeStory.business_value || 5,
+        riskLevel: completeStory.risk_level as RiskLevel || 'low',
+        epic: completeStory.epic ? {
+          id: completeStory.epic.id,
+          name: completeStory.epic.title
+        } : undefined,
+        sprint: completeStory.sprint ? {
+          id: completeStory.sprint.id,
+          name: completeStory.sprint.name
+        } : undefined,
+        assignee: completeStory.assignee ? {
+          id: completeStory.assignee.id,
+          fullName: completeStory.assignee.full_name || '',
+          avatarUrl: completeStory.assignee.avatar_url || undefined,
+          email: '',
+          role: completeStory.assignee.role || undefined
+        } : undefined,
+        reporter: {
+          id: completeStory.reporter.id,
+          fullName: completeStory.reporter.full_name || '',
+          avatarUrl: completeStory.reporter.avatar_url || undefined,
+          email: '',
+          role: completeStory.reporter.role || undefined
+        }
+      };
+
+      // Call onSave with the transformed story
+      onSave?.(transformedStory);
       
-      onSave(updatedStory);
+      // Show success message
+      toast({
+        title: "Success",
+        description: `Story ${storyId ? 'updated' : 'created'} successfully`,
+        variant: "default"
+      });
+      
       onClose();
+    } catch (error) {
+      console.error('Error saving story:', error);
+      toast({
+        title: "Error",
+        description: `Failed to ${story?.id ? 'update' : 'create'} story: ${(error as Error).message}`,
+        variant: "destructive"
+      });
+    } finally {
+      setIsSubmitting(false);
     }
   };
 
   const addAcceptanceCriteria = () => {
     setFormData({
       ...formData,
-      acceptanceCriteria: [...(formData.acceptanceCriteria || []), '']
+      acceptanceCriteria: [...(formData.acceptanceCriteria || []), { description: '' }]
     });
   };
 
   const updateAcceptanceCriteria = (index: number, value: string) => {
     const newCriteria = [...(formData.acceptanceCriteria || [])];
-    newCriteria[index] = value;
+    newCriteria[index] = { description: value };
     handleChange('acceptanceCriteria', newCriteria);
   };
 
@@ -135,15 +454,9 @@ const StoryDetailDialog: React.FC<StoryDetailDialogProps> = ({
     handleChange('tags', (formData.tags || []).filter(t => t !== tag));
   };
 
-  // For new tag input
-  const [newTag, setNewTag] = useState('');
-  
   // For Fibonacci sequence in story points
   const fibonacciPoints = [0, 1, 2, 3, 5, 8, 13, 21];
 
-  // State for showing AI generator
-  const [showAiGenerator, setShowAiGenerator] = useState(false);
-  
   // State for generating acceptance criteria
   const [isGeneratingCriteria, setIsGeneratingCriteria] = useState(false);
 
@@ -154,7 +467,7 @@ const StoryDetailDialog: React.FC<StoryDetailDialogProps> = ({
       ...prevState,
       title: result.title || prevState.title,
       description: result.description,
-      acceptanceCriteria: [...(prevState.acceptanceCriteria || []), ...result.outline]
+      acceptanceCriteria: [...(prevState.acceptanceCriteria || []), ...result.outline.map(o => ({ description: o }))]
     }));
 
     // Hide the AI generator
@@ -167,7 +480,6 @@ const StoryDetailDialog: React.FC<StoryDetailDialogProps> = ({
       toast({
         title: "Missing Information",
         description: "Please provide a title and description before generating acceptance criteria.",
-        variant: "destructive"
       });
       return;
     }
@@ -182,7 +494,7 @@ const StoryDetailDialog: React.FC<StoryDetailDialogProps> = ({
       // Update form with AI-generated criteria
       setFormData(prevState => ({
         ...prevState,
-        acceptanceCriteria: [...(prevState.acceptanceCriteria || []), ...result.criteria]
+        acceptanceCriteria: [...(prevState.acceptanceCriteria || []), ...result.criteria.map(c => ({ description: c }))]
       }));
       
       toast({
@@ -194,7 +506,6 @@ const StoryDetailDialog: React.FC<StoryDetailDialogProps> = ({
       toast({
         title: "Error",
         description: "Failed to generate acceptance criteria. Please try again.",
-        variant: "destructive"
       });
     } finally {
       setIsGeneratingCriteria(false);
@@ -205,16 +516,13 @@ const StoryDetailDialog: React.FC<StoryDetailDialogProps> = ({
     <Dialog open={isOpen} onOpenChange={(open) => !open && onClose()}>
       <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
         <DialogHeader>
-          <DialogTitle>{isNewStory ? 'Create Story' : 'Edit Story'}</DialogTitle>
+          <DialogTitle>{story ? 'Edit Story' : 'Create Story'}</DialogTitle>
           <DialogDescription>
-            {isNewStory 
-              ? 'Create a new story to track work in your project.' 
-              : `Editing story ${story?.id}`
-            }
+            {story ? `Editing story ${story.id}` : 'Create a new story to track work in your project.'}
           </DialogDescription>
         </DialogHeader>
         
-        <Tabs value={activeTab} onValueChange={setActiveTab}>
+        <Tabs value="details" className="space-y-4 py-4">
           <TabsList className="grid grid-cols-4">
             <TabsTrigger value="details">Details</TabsTrigger>
             <TabsTrigger value="acceptance">Acceptance Criteria</TabsTrigger>
@@ -224,7 +532,7 @@ const StoryDetailDialog: React.FC<StoryDetailDialogProps> = ({
           
           <TabsContent value="details" className="space-y-4 py-4">
             {/* AI Generation Button */}
-            {isNewStory && !showAiGenerator && (
+            {!story && !showAiGenerator && (
               <Button 
                 variant="outline" 
                 className="w-full mb-4 border-dashed border-primary/50 flex gap-2 items-center"
@@ -236,7 +544,7 @@ const StoryDetailDialog: React.FC<StoryDetailDialogProps> = ({
             )}
 
             {/* AI Story Generator */}
-            {isNewStory && showAiGenerator && (
+            {!story && showAiGenerator && (
               <div className="mb-4">
                 <StoryGenerator 
                   initialTitle={formData.title}
@@ -373,7 +681,7 @@ const StoryDetailDialog: React.FC<StoryDetailDialogProps> = ({
                     </SelectTrigger>
                     <SelectContent>
                       <SelectItem value="unassigned">Unassigned</SelectItem>
-                      {mockUsers.map(user => (
+                      {users.map(user => (
                         <SelectItem key={user.id} value={user.id}>
                           {user.fullName}
                         </SelectItem>
@@ -483,7 +791,7 @@ const StoryDetailDialog: React.FC<StoryDetailDialogProps> = ({
                   {(formData.acceptanceCriteria || []).map((criteria, index) => (
                     <div key={index} className="flex items-start space-x-2">
                       <Input 
-                        value={criteria} 
+                        value={criteria.description} 
                         onChange={(e) => updateAcceptanceCriteria(index, e.target.value)}
                         placeholder="Enter acceptance criteria"
                         className="flex-1"
@@ -517,9 +825,11 @@ const StoryDetailDialog: React.FC<StoryDetailDialogProps> = ({
                     </SelectTrigger>
                     <SelectContent>
                       <SelectItem value="none">None</SelectItem>
-                      <SelectItem value="EP-01">User Authentication & Authorization</SelectItem>
-                      <SelectItem value="EP-02">Dashboard Experience</SelectItem>
-                      <SelectItem value="EP-03">Platform Performance Optimization</SelectItem>
+                      {epics.map(epic => (
+                        <SelectItem key={epic.id} value={epic.id}>
+                          {epic.title}
+                        </SelectItem>
+                      ))}
                     </SelectContent>
                   </Select>
                 </div>
@@ -535,9 +845,11 @@ const StoryDetailDialog: React.FC<StoryDetailDialogProps> = ({
                     </SelectTrigger>
                     <SelectContent>
                       <SelectItem value="none">None</SelectItem>
-                      <SelectItem value="1">Sprint 23</SelectItem>
-                      <SelectItem value="2">Sprint 24</SelectItem>
-                      <SelectItem value="3">Sprint 22</SelectItem>
+                      {sprints.map(sprint => (
+                        <SelectItem key={sprint.id} value={sprint.id}>
+                          {sprint.name}
+                        </SelectItem>
+                      ))}
                     </SelectContent>
                   </Select>
                 </div>
@@ -630,7 +942,7 @@ const StoryDetailDialog: React.FC<StoryDetailDialogProps> = ({
             Cancel
           </Button>
           <Button onClick={handleSubmit} disabled={!formData.title}>
-            {isNewStory ? 'Create Story' : 'Save Changes'}
+            {story ? 'Save Changes' : 'Create Story'}
           </Button>
         </DialogFooter>
       </DialogContent>

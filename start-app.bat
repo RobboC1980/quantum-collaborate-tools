@@ -123,7 +123,7 @@ echo If the application is running correctly, you should be able to access it at
 echo http://localhost:3000
 echo.
 echo The API proxy server should be running at:
-echo http://localhost:3001
+echo http://localhost:3002
 echo.
 echo Press Ctrl+C to stop the application.
 echo.
