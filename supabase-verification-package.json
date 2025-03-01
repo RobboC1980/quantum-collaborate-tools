@@ -1,0 +1,16 @@
+{
+  "name": "quantumscribe-supabase-verification",
+  "version": "1.0.0",
+  "description": "Verification script for QuantumScribe Supabase integration",
+  "main": "supabase-verification.js",
+  "type": "module",
+  "scripts": {
+    "verify": "node supabase-verification.js"
+  },
+  "dependencies": {
+    "@supabase/supabase-js": "^2.39.3",
+    "chalk": "^5.3.0",
+    "dotenv": "^16.3.1",
+    "uuid": "^9.0.1"
+  }
+} 

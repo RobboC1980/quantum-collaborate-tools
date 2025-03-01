@@ -245,3 +245,100 @@ await assignRoleToUser({ userId: 'user-id', roleId: 'role-id' });
 2. Time-limited role assignments
 3. Audit logging for permission changes
 4. Dynamic permission generation based on system features
+
+# QuantumScribe Supabase Integration Tools
+
+This repository contains a collection of tools and documentation to help you set up, verify, and deploy your Supabase integration for QuantumScribe in a production environment.
+
+## 📚 Documentation
+
+- [**SUPABASE-PRODUCTION-GUIDE.md**](./SUPABASE-PRODUCTION-GUIDE.md) - Comprehensive guide for setting up Supabase for production
+- [**SUPABASE-VERIFICATION.md**](./SUPABASE-VERIFICATION.md) - Instructions for verifying your Supabase integration
+- [**SUPABASE-SETUP.md**](./SUPABASE-SETUP.md) - Initial setup guide for Supabase
+
+## 🛠️ Tools
+
+This repository includes several tools to help you verify and deploy your Supabase integration:
+
+### Verification Script
+
+The `supabase-verification.js` script tests your Supabase integration by:
+- Testing user authentication
+- Testing data storage for projects, epics, and stories
+- Testing data segregation between users
+- Testing storage functionality and access control
+
+```bash
+npm run verify
+```
+
+### Production Readiness Check
+
+The `check-production-readiness.js` script checks if your Supabase configuration is ready for production by verifying:
+- Environment variables
+- Database schema
+- RLS policies
+- Storage configuration
+- Authentication settings
+- Database indexes
+
+```bash
+npm run check-production
+```
+
+### RLS Policy Deployment
+
+The `deploy-rls-policies.js` script helps you deploy Row Level Security (RLS) policies to your Supabase project:
+
+```bash
+npm run deploy-rls
+```
+
+## 🚀 Getting Started
+
+1. **Clone this repository:**
+   ```bash
+   git clone https://github.com/your-username/quantumscribe-supabase-tools.git
+   cd quantumscribe-supabase-tools
+   ```
+
+2. **Install dependencies:**
+   ```bash
+   npm install
+   ```
+
+3. **Set up environment variables:**
+   Copy the `.env.example` file to `.env` and fill in your Supabase credentials:
+   ```bash
+   cp .env.example .env
+   ```
+
+4. **Run the verification script:**
+   ```bash
+   npm run verify
+   ```
+
+5. **Check production readiness:**
+   ```bash
+   npm run check-production
+   ```
+
+## 📋 Files Included
+
+- `supabase-verification.js` - Script to verify Supabase integration
+- `check-production-readiness.js` - Script to check production readiness
+- `deploy-rls-policies.js` - Script to deploy RLS policies
+- `supabase/migrations/20240301_rls_policies.sql` - SQL file with RLS policies
+- `.env.example` - Example environment variables file
+- `package.json` - Node.js package configuration
+
+## 🔒 Security Considerations
+
+- Never commit your `.env` file with real credentials
+- Keep your service role key secure and never expose it in client-side code
+- Regularly review your RLS policies to ensure proper data segregation
+- Monitor your Supabase project for unusual activity
+
+## 📝 License
+
+This project is licensed under the MIT License - see the LICENSE file for details.
