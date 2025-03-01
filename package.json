@@ -9,13 +9,15 @@
     "deploy-rls": "node deploy-rls-policies.js",
     "deploy-rls-direct": "node deploy-rls-direct.js",
     "deploy-rls-sql": "node deploy-rls-sql.js",
-    "deploy-exec-sql": "node deploy-exec-sql-function.js"
+    "deploy-exec-sql": "node deploy-exec-sql-function.js",
+    "check-tables": "node check-tables.js",
+    "verify-tables": "node verify-tables.js",
+    "create-tables": "node create-tables-script.js"
   },
   "dependencies": {
     "@supabase/supabase-js": "^2.39.3",
     "chalk": "^5.3.0",
     "dotenv": "^16.3.1",
-    "node-fetch": "^3.3.2",
     "uuid": "^9.0.1"
   },
   "engines": {
