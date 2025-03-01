@@ -2,6 +2,7 @@ import { aiClient } from '@/integrations/openai/client';
 import { Story, StoryWithRelations } from '@/types/story';
 import { Task, TaskWithRelations, TaskStatus, TaskPriority } from '@/types/task';
 import { toast } from 'react-hot-toast';
+import { UserStoryFormat } from '@/components/ai/StoryGenerator';
 
 // Interface for AI-generated story descriptions and outlines
 export interface StoryGenerationResult {
@@ -18,50 +19,65 @@ export interface TaskGenerationResult {
   }[];
 }
 
+// Interface for AI-generated acceptance criteria
+export interface AcceptanceCriteriaResult {
+  criteria: string[];
+}
+
 // Interface for AI writing assistance
 export interface WritingAssistanceResult {
   content: string;
   suggestions: string[];
 }
 
-// Logging function for AI operations
-const logAiOperation = (operation: string, success: boolean, details?: any) => {
-  const timestamp = new Date().toISOString();
-  const status = success ? 'SUCCESS' : 'FAILURE';
-  console.log(`[AI-SERVICE][${timestamp}][${status}] ${operation}`, details || '');
+// Logging helper for AI operations
+const logAiOperation = (
+  operation: string, 
+  success: boolean, 
+  details?: Record<string, unknown>
+) => {
+  const status = success ? 'SUCCESS' : 'FAILED';
+  console.log(`[AI-SERVICE] ${operation} ${status}`, details || '');
+  
+  // In a real app, you might want to log this to an analytics service
+  if (!success) {
+    toast.error(`AI operation failed: ${operation}`);
+  }
 };
 
-// Retry mechanism for AI operations
+// Helper function to retry API calls with exponential backoff
 const withRetry = async <T>(
-  operation: () => Promise<T>,
+  fn: () => Promise<T>,
   operationName: string,
-  maxRetries = 2
+  maxRetries = 3
 ): Promise<T> => {
-  let lastError: any;
+  let retries = 0;
+  let lastError: unknown;
   
-  for (let attempt = 1; attempt <= maxRetries + 1; attempt++) {
+  while (retries < maxRetries) {
     try {
-      if (attempt > 1) {
-        console.log(`[AI-SERVICE] Retry attempt ${attempt - 1} for ${operationName}`);
-      }
-      
-      const result = await operation();
-      logAiOperation(operationName, true);
-      return result;
+      return await fn();
     } catch (error) {
       lastError = error;
-      logAiOperation(operationName, false, { error: error instanceof Error ? error.message : String(error), attempt });
+      console.error(`Error in ${operationName} (attempt ${retries + 1}/${maxRetries}):`, error);
       
-      // Don't wait on the last attempt
-      if (attempt <= maxRetries) {
+      // Only retry on network errors or rate limits
+      if (error instanceof Error && 
+          (error.message.includes('network') || 
+           error.message.includes('timeout') || 
+           error.message.includes('rate limit'))) {
+        retries++;
         // Exponential backoff: 1s, 2s, 4s, etc.
-        const backoffTime = Math.min(1000 * Math.pow(2, attempt - 1), 8000);
-        await new Promise(resolve => setTimeout(resolve, backoffTime));
+        const delay = Math.pow(2, retries) * 1000;
+        await new Promise(resolve => setTimeout(resolve, delay));
+      } else {
+        // For other errors, don't retry
+        break;
       }
     }
   }
   
-  // If we get here, all retries failed
+  // If we've exhausted retries or hit a non-retryable error
   throw lastError;
 };
 
@@ -70,19 +86,23 @@ export const aiService = {
   /**
    * Generate a story description and outline based on a title
    */
-  async generateStoryDescription(title: string): Promise<StoryGenerationResult> {
+  async generateStoryDescription(title: string, storyFormat: UserStoryFormat = 'user'): Promise<StoryGenerationResult> {
     return withRetry(async () => {
+      // Get the appropriate format prefix
+      const formatPrefix = getStoryFormatPrefix(storyFormat);
+      
       const prompt = `
-        As a writing assistant for a student or content creator, please generate a comprehensive description and outline for the following writing project: "${title}".
+        As a product manager or agile coach, please generate a user story with acceptance criteria for the following request: "${title}".
         
         Please format your response as a JSON object with the following structure:
         {
-          "description": "A paragraph describing the writing project and its goals",
-          "outline": ["Section 1", "Section 2", "Section 3", ...]
+          "description": "A user story in the format '${formatPrefix} [action] so that [benefit]'",
+          "outline": ["Acceptance Criterion 1", "Acceptance Criterion 2", "Acceptance Criterion 3", ...]
         }
         
-        The description should be a single paragraph explaining what the project is about, its purpose, and key elements to cover.
-        The outline should break down the project into logical sections or chapters.
+        The description should be a single, well-formed user story that follows the format "${formatPrefix} [action] so that [benefit]".
+        The outline should contain 3-6 specific, testable acceptance criteria that clearly define when the story is complete.
+        Each acceptance criterion should be concise, clear, and focused on a single requirement.
       `;
       
       const result = await aiClient.generateStructuredData<StoryGenerationResult>(prompt);
@@ -94,6 +114,36 @@ export const aiService = {
       
       return result;
     }, 'generateStoryDescription');
+  },
+  
+  /**
+   * Generate acceptance criteria for a story based on its title and description
+   */
+  async generateAcceptanceCriteria(story: { title: string; description: string }): Promise<AcceptanceCriteriaResult> {
+    return withRetry(async () => {
+      const prompt = `
+        Based on the following user story titled "${story.title}" with description "${story.description}", 
+        please generate a list of acceptance criteria that would define when this story is complete.
+        
+        Please format your response as a JSON object with the following structure:
+        {
+          "criteria": ["Criterion 1", "Criterion 2", "Criterion 3", ...]
+        }
+        
+        Include 3-6 specific, testable acceptance criteria that clearly define when the story is complete.
+        Each criterion should be concise, clear, and focused on a single requirement.
+        Criteria should follow the format "The system should..." or similar action-oriented phrasing.
+      `;
+      
+      const result = await aiClient.generateStructuredData<AcceptanceCriteriaResult>(prompt);
+      
+      // Validate the response
+      if (!result.criteria || !Array.isArray(result.criteria)) {
+        throw new Error('AI returned an invalid response format');
+      }
+      
+      return result;
+    }, 'generateAcceptanceCriteria');
   },
   
   /**
@@ -249,5 +299,21 @@ export const aiService = {
     return await aiClient.generateContent(prompt);
   }
 };
+
+/**
+ * Helper function to get the appropriate user story format prefix
+ */
+function getStoryFormatPrefix(format: UserStoryFormat): string {
+  const formatPrefixes: Record<UserStoryFormat, string> = {
+    'user': 'As a user, I want to',
+    'developer': 'As a developer, I want to',
+    'administrator': 'As an administrator, I want to',
+    'product-owner': 'As a product owner, I want to',
+    'tester': 'As a tester, I want to',
+    'stakeholder': 'As a stakeholder, I want to'
+  };
+  
+  return formatPrefixes[format];
+}
 
 export default aiService; 

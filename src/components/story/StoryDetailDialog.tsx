@@ -32,11 +32,14 @@ import {
   Paperclip,
   Flag,
   Hash,
-  Sparkles
+  Sparkles,
+  Loader2
 } from 'lucide-react';
 import { StoryWithRelations, StoryType, StoryStatus, StoryPriority, RiskLevel } from '@/types/story';
 import { User as UserType, mockUsers } from '@/types/user';
 import StoryGenerator from '@/components/ai/StoryGenerator';
+import { aiService } from '@/services/ai-service';
+import { useToast } from '@/components/ui/use-toast';
 
 interface StoryDetailDialogProps {
   story?: StoryWithRelations;
@@ -53,6 +56,7 @@ const StoryDetailDialog: React.FC<StoryDetailDialogProps> = ({
 }) => {
   const isNewStory = !story;
   const [activeTab, setActiveTab] = useState('details');
+  const { toast } = useToast();
   
   // For a new story, create a default template
   const [formData, setFormData] = useState<Partial<StoryWithRelations>>(
@@ -76,7 +80,7 @@ const StoryDetailDialog: React.FC<StoryDetailDialogProps> = ({
     }
   );
 
-  const handleChange = (field: string, value: any) => {
+  const handleChange = (field: string, value: unknown) => {
     setFormData({
       ...formData,
       [field]: value
@@ -139,6 +143,9 @@ const StoryDetailDialog: React.FC<StoryDetailDialogProps> = ({
 
   // State for showing AI generator
   const [showAiGenerator, setShowAiGenerator] = useState(false);
+  
+  // State for generating acceptance criteria
+  const [isGeneratingCriteria, setIsGeneratingCriteria] = useState(false);
 
   // Handle AI generation
   const handleAiGeneration = (result: { title: string, description: string, outline: string[] }) => {
@@ -147,11 +154,51 @@ const StoryDetailDialog: React.FC<StoryDetailDialogProps> = ({
       ...prevState,
       title: result.title || prevState.title,
       description: result.description,
-      acceptanceCriteria: [...prevState.acceptanceCriteria, ...result.outline]
+      acceptanceCriteria: [...(prevState.acceptanceCriteria || []), ...result.outline]
     }));
 
     // Hide the AI generator
     setShowAiGenerator(false);
+  };
+  
+  // Handle generating acceptance criteria
+  const handleGenerateAcceptanceCriteria = async () => {
+    if (!formData.title || !formData.description) {
+      toast({
+        title: "Missing Information",
+        description: "Please provide a title and description before generating acceptance criteria.",
+        variant: "destructive"
+      });
+      return;
+    }
+    
+    setIsGeneratingCriteria(true);
+    try {
+      const result = await aiService.generateAcceptanceCriteria({
+        title: formData.title,
+        description: formData.description
+      });
+      
+      // Update form with AI-generated criteria
+      setFormData(prevState => ({
+        ...prevState,
+        acceptanceCriteria: [...(prevState.acceptanceCriteria || []), ...result.criteria]
+      }));
+      
+      toast({
+        title: "Success",
+        description: "Acceptance criteria generated successfully.",
+      });
+    } catch (error) {
+      console.error('Error generating acceptance criteria:', error);
+      toast({
+        title: "Error",
+        description: "Failed to generate acceptance criteria. Please try again.",
+        variant: "destructive"
+      });
+    } finally {
+      setIsGeneratingCriteria(false);
+    }
   };
 
   return (
@@ -375,9 +422,30 @@ const StoryDetailDialog: React.FC<StoryDetailDialogProps> = ({
             <div className="space-y-4">
               <div className="flex items-center justify-between">
                 <h3 className="text-lg font-medium">Acceptance Criteria</h3>
-                <Button type="button" onClick={addAcceptanceCriteria} variant="outline" size="sm">
-                  Add Criteria
-                </Button>
+                <div className="flex space-x-2">
+                  <Button 
+                    type="button" 
+                    onClick={handleGenerateAcceptanceCriteria} 
+                    variant="outline" 
+                    size="sm"
+                    disabled={isGeneratingCriteria || !formData.title || !formData.description}
+                  >
+                    {isGeneratingCriteria ? (
+                      <>
+                        <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                        Generating...
+                      </>
+                    ) : (
+                      <>
+                        <Sparkles className="mr-2 h-4 w-4" />
+                        Generate Criteria
+                      </>
+                    )}
+                  </Button>
+                  <Button type="button" onClick={addAcceptanceCriteria} variant="outline" size="sm">
+                    Add Criteria
+                  </Button>
+                </div>
               </div>
               
               {(formData.acceptanceCriteria || []).length === 0 ? (
@@ -387,9 +455,28 @@ const StoryDetailDialog: React.FC<StoryDetailDialogProps> = ({
                   <p className="text-muted-foreground mb-4 max-w-md">
                     Acceptance criteria define when a story is complete. Add criteria to clarify what needs to be done.
                   </p>
-                  <Button type="button" onClick={addAcceptanceCriteria}>
-                    Add First Criteria
-                  </Button>
+                  <div className="flex space-x-2">
+                    <Button 
+                      type="button" 
+                      onClick={handleGenerateAcceptanceCriteria}
+                      disabled={isGeneratingCriteria || !formData.title || !formData.description}
+                    >
+                      {isGeneratingCriteria ? (
+                        <>
+                          <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                          Generating...
+                        </>
+                      ) : (
+                        <>
+                          <Sparkles className="mr-2 h-4 w-4" />
+                          Generate with AI
+                        </>
+                      )}
+                    </Button>
+                    <Button type="button" onClick={addAcceptanceCriteria}>
+                      Add Manually
+                    </Button>
+                  </div>
                 </div>
               ) : (
                 <div className="space-y-3">
