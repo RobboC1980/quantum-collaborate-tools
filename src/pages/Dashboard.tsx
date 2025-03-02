@@ -44,14 +44,19 @@ const Dashboard = () => {
   
   useEffect(() => {
     console.log("Dashboard useEffect running");
+    let isMounted = true;
+    
     // Simulate loading data
     const timer = setTimeout(() => {
-      console.log("Dashboard data loaded");
-      setIsLoading(false);
+      if (isMounted) {
+        console.log("Dashboard data loaded");
+        setIsLoading(false);
+      }
     }, 300);
     
     return () => {
       console.log("Dashboard useEffect cleanup");
+      isMounted = false;
       clearTimeout(timer);
     };
   }, []);

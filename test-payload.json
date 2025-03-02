@@ -1,0 +1,9 @@
+{
+  "model": "qwen-max",
+  "messages": [
+    {
+      "role": "user",
+      "content": "Hello"
+    }
+  ]
+} 

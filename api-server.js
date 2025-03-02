@@ -1,221 +1,317 @@
-const express = require('express');
-const cors = require('cors');
-const axios = require('axios');
-const dotenv = require('dotenv');
-const path = require('path');
+import express from 'express';
+import cors from 'cors';
+import axios from 'axios';
+import fs from 'fs';
+import path from 'path';
+import { fileURLToPath } from 'url';
 
-// Load environment variables from .env file
-dotenv.config();
-
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
 const app = express();
-const PORT = process.env.API_PORT || 8081;
+const PORT = process.env.API_PORT || 8081; // Read from env or default to 8081
 
-// Essential middleware
-app.use(express.json({ limit: '10mb' })); // Increase JSON size limit for image uploads
-app.use(cors({
-  origin: ['http://localhost:5173', 'http://localhost:3000', 'http://localhost:8080'], // Add your frontend URLs
-  methods: ['GET', 'POST', 'PUT', 'DELETE'],
-  allowedHeaders: ['Content-Type', 'Authorization']
-}));
+// Enable CORS and JSON parsing
+app.use(cors());
+app.use(express.json({ limit: '10mb' })); // Increase limit for larger requests
+app.use(express.urlencoded({ extended: true, limit: '10mb' }));
 
-// Logging middleware
-app.use((req, res, next) => {
-  console.log(`[${new Date().toISOString()}] ${req.method} ${req.url}`);
-  next();
-});
+// Attempt to load environment variables from .env file if it exists
+let QWEN_API_KEY = process.env.QWEN_API_KEY;
+let QWEN_API_URL = process.env.QWEN_API_URL || 'https://api.qwen.ai/v1';
+let QWEN_MODEL = process.env.QWEN_MODEL || 'qwen2.5-7b-instruct';
 
-// Validate environment variables on startup
-function validateEnvVars() {
-  const requiredVars = ['DASHSCOPE_API_KEY', 'QWEN_API_URL', 'QWEN_MODEL'];
-  const missing = requiredVars.filter(varName => !process.env[varName]);
-  
-  if (missing.length > 0) {
-    console.error('❌ Error: Missing required environment variables:', missing.join(', '));
-    console.error('Please add them to your .env file');
-    process.exit(1);
-  } else {
-    console.log('✅ Environment variables validated');
+try {
+  if (fs.existsSync(path.join(process.cwd(), '.env'))) {
+    const envFile = fs.readFileSync(path.join(process.cwd(), '.env'), 'utf8');
+    
+    // Extract API key
+    const qwenKeyMatch = envFile.match(/QWEN_API_KEY=(.+)/);
+    if (qwenKeyMatch && qwenKeyMatch[1]) {
+      QWEN_API_KEY = qwenKeyMatch[1].trim();
+      console.log('Extracted API key from .env file:', QWEN_API_KEY.substring(0, 5) + '...');
+    }
+    
+    // Extract API URL
+    const qwenUrlMatch = envFile.match(/QWEN_API_URL=(.+)/);
+    if (qwenUrlMatch && qwenUrlMatch[1]) {
+      QWEN_API_URL = qwenUrlMatch[1].trim();
+      console.log('Using QWEN API URL:', QWEN_API_URL);
+    }
+    
+    // Extract default model
+    const qwenModelMatch = envFile.match(/QWEN_MODEL=(.+)/);
+    if (qwenModelMatch && qwenModelMatch[1]) {
+      QWEN_MODEL = qwenModelMatch[1].trim();
+      console.log('Using default QWEN model:', QWEN_MODEL);
+    }
   }
+} catch (err) {
+  console.error('Error reading .env file:', err);
 }
 
-// QWEN API routes
-app.post('/api/qwen/completions', async (req, res) => {
-  try {
-    console.log('📤 Forwarding request to DashScope/QWEN API: /chat/completions');
-    
-    const apiKey = process.env.DASHSCOPE_API_KEY;
-    const apiUrl = process.env.QWEN_API_URL;
-    
-    if (!apiKey || !apiUrl) {
-      throw new Error('DashScope API key or URL not configured');
-    }
-    
-    // Format the request body according to DashScope/QWEN API requirements
-    const model = req.body.model || process.env.QWEN_MODEL || 'qwen-plus';
-    
-    // Log the model being used
-    console.log(`Using model: ${model}`);
-    
-    // Format the request to match DashScope/QWEN API expectations for the OpenAI-compatible API
-    const requestBody = {
-      model: model,
-      messages: [
-        { role: 'system', content: 'You are a helpful assistant that writes concise, accurate responses.' },
-        { role: 'user', content: req.body.prompt || "Hello" }
-      ],
-      max_tokens: req.body.max_tokens || 800,
-      temperature: req.body.temperature || 0.7,
-      stream: false // Disable streaming to avoid communication issues
-    };
-    
-    console.log('Formatted request body:', JSON.stringify(requestBody, null, 2));
-    
-    // Set a longer timeout for larger generations (120 seconds)
-    const timeout = 120000;
-    
-    console.log(`📡 Sending request to ${apiUrl}/chat/completions with ${timeout/1000}s timeout`);
-    
-    const response = await axios.post(`${apiUrl}/chat/completions`, requestBody, {
-      headers: {
-        'Authorization': `Bearer ${apiKey}`,
-        'Content-Type': 'application/json'
-      },
-      timeout: timeout
-    });
-    
-    console.log('📥 Received response from DashScope API:', response.status);
-    
-    // Transform the response to match what our client expects
-    const transformedResponse = {
-      id: response.data.id || 'dashscope-response',
-      object: response.data.object || 'chat.completion',
-      created: response.data.created || Date.now(),
-      model: response.data.model || model,
-      choices: [{
-        text: response.data.choices[0]?.message?.content || "",
-        index: 0,
-        logprobs: null,
-        finish_reason: response.data.choices[0]?.finish_reason || "stop"
-      }],
-      usage: response.data.usage || {
-        prompt_tokens: 0,
-        completion_tokens: 0,
-        total_tokens: 0
-      }
-    };
-    
-    // Return response to client
-    res.json(transformedResponse);
-  } catch (error) {
-    console.error('❌ DashScope/QWEN API Error:', error.message);
-    
-    // Detailed error logging
-    if (error.response) {
-      // The request was made and the server responded with a status code
-      // that falls out of the range of 2xx
-      console.error('Error response data:', error.response.data);
-      console.error('Error response status:', error.response.status);
-      console.error('Error response headers:', error.response.headers);
-      
-      res.status(error.response.status).json({
-        error: 'DashScope API Error',
-        message: error.message,
-        details: error.response.data
-      });
-    } else if (error.code === 'ECONNABORTED') {
-      // Handle timeout explicitly
-      console.error('API request timed out after waiting for response');
-      res.status(504).json({
-        error: 'DashScope API Timeout',
-        message: 'The request to the AI service timed out. The model might be overloaded or the request is too complex.',
-        details: error.message
-      });
-    } else if (error.request) {
-      // The request was made but no response was received
-      console.error('Error request:', error.request);
-      res.status(504).json({
-        error: 'DashScope API Timeout',
-        message: 'No response received from DashScope API',
-        details: error.message
-      });
-    } else {
-      // Something happened in setting up the request that triggered an Error
-      console.error('Error message:', error.message);
-      res.status(500).json({
-        error: 'DashScope API Request Failed',
-        message: error.message
-      });
-    }
-  }
-});
+// Fallback to hardcoded value if no API key found
+QWEN_API_KEY = QWEN_API_KEY || 'sk-b2ead61191a9467f89d69cb540ee3005';
 
-// Handle embeddings via the compatible API
-app.post('/api/qwen/embeddings', async (req, res) => {
-  try {
-    console.log('📤 Forwarding request to DashScope API: /embeddings');
-    
-    const apiKey = process.env.DASHSCOPE_API_KEY;
-    const apiUrl = process.env.QWEN_API_URL;
-    const model = req.body.model || process.env.QWEN_EMBEDDING_MODEL || 'text-embedding-ada-002';
-    
-    const response = await axios.post(`${apiUrl}/embeddings`, {
-      model: model,
-      input: req.body.input
-    }, {
-      headers: {
-        'Authorization': `Bearer ${apiKey}`,
-        'Content-Type': 'application/json'
-      },
-      timeout: 30000 // 30 second timeout
-    });
-    
-    console.log('📥 Received response from DashScope API:', response.status);
-    res.json(response.data);
-  } catch (error) {
-    console.error('❌ DashScope API Error:', error.message);
-    
-    if (error.response) {
-      res.status(error.response.status).json({
-        error: 'DashScope API Error',
-        message: error.message,
-        details: error.response.data
-      });
-    } else {
-      res.status(500).json({
-        error: 'DashScope API Request Failed',
-        message: error.message
-      });
-    }
-  }
-});
+console.log('API proxy server is using API key:', QWEN_API_KEY.substring(0, 5) + '...');
+console.log('API proxy server is using API URL:', QWEN_API_URL);
 
 // Health check endpoint
 app.get('/api/health', (req, res) => {
   res.json({ 
-    status: 'ok', 
-    timestamp: new Date().toISOString(),
-    environment: {
-      apiUrl: process.env.QWEN_API_URL ? '✅ Configured' : '❌ Missing',
-      apiKey: process.env.DASHSCOPE_API_KEY ? '✅ Configured' : '❌ Missing',
-      model: process.env.QWEN_MODEL
-    }
+    status: 'ok',
+    apiUrl: QWEN_API_URL,
+    defaultModel: QWEN_MODEL
   });
+});
+
+// Completions endpoint for text generation
+app.post('/api/qwen/completions', async (req, res) => {
+  try {
+    console.log('Received request to /api/qwen/completions');
+    
+    // Extract the prompt and other parameters
+    const { prompt, max_tokens, temperature, top_p, model } = req.body;
+    
+    if (!prompt) {
+      return res.status(400).json({
+        error: {
+          message: 'Missing required parameter: prompt',
+          type: 'invalid_request_error',
+          param: 'prompt',
+          code: 400
+        }
+      });
+    }
+    
+    console.log('Prompt length:', prompt.length);
+    console.log('Max tokens:', max_tokens);
+    
+    // Use system message to improve response format
+    const messages = [
+      {
+        role: "system",
+        content: "You are a helpful AI assistant. Respond directly to the user's request without unnecessary preamble or explanation."
+      },
+      {
+        role: "user",
+        content: prompt
+      }
+    ];
+    
+    // Create a properly formatted request for QWEN API
+    const qwenRequest = {
+      model: model || QWEN_MODEL,
+      messages: messages,
+      temperature: temperature || 0.7,
+      top_p: top_p || 0.8,
+      max_tokens: max_tokens || 1500,
+      stream: false
+    };
+    
+    console.log('Using model:', qwenRequest.model);
+    
+    // Set a reasonable timeout
+    const timeout = Math.min(120000, Math.max(30000, max_tokens * 100)); // between 30s and 120s
+    
+    const response = await axios({
+      method: 'post',
+      url: `${QWEN_API_URL}/chat/completions`,
+      headers: {
+        'Authorization': `Bearer ${QWEN_API_KEY}`,
+        'Content-Type': 'application/json'
+      },
+      data: qwenRequest,
+      timeout: timeout
+    });
+    
+    console.log('QWEN API response status:', response.status);
+    
+    // Transform chat completion response to text completion format
+    if (response.data && response.data.choices && response.data.choices.length > 0) {
+      // Extract the assistant's response
+      const assistantMessage = response.data.choices[0].message.content;
+      
+      // Format as a text completion response
+      const textCompletionResponse = {
+        id: response.data.id,
+        object: 'text_completion',
+        created: response.data.created,
+        model: response.data.model,
+        choices: [
+          {
+            text: assistantMessage,
+            index: 0,
+            logprobs: null,
+            finish_reason: response.data.choices[0].finish_reason
+          }
+        ],
+        usage: response.data.usage
+      };
+      
+      return res.json(textCompletionResponse);
+    }
+    
+    // If response format is unexpected, return it as is
+    res.json(response.data);
+  } catch (error) {
+    console.error('Error proxying to QWEN API:', error.message);
+    
+    if (error.response) {
+      console.error('QWEN API error response:', error.response.data);
+      return res.status(error.response.status).json({
+        error: {
+          message: `QWEN API Error: ${error.response.data.error?.message || error.message}`,
+          type: error.response.data.error?.type || 'api_error',
+          param: null,
+          code: error.response.status
+        }
+      });
+    }
+    
+    if (error.code === 'ECONNABORTED') {
+      return res.status(504).json({
+        error: {
+          message: 'Request to QWEN API timed out. Try with a shorter prompt or fewer tokens.',
+          type: 'timeout_error',
+          param: null,
+          code: 504
+        }
+      });
+    }
+    
+    res.status(500).json({
+      error: {
+        message: `Internal server error: ${error.message}`,
+        type: 'internal_error',
+        param: null,
+        code: 500
+      }
+    });
+  }
+});
+
+// Embeddings endpoint
+app.post('/api/qwen/embeddings', async (req, res) => {
+  try {
+    console.log('Received request to /api/qwen/embeddings');
+    
+    // Get input text(s) and model
+    const { input, model } = req.body;
+    
+    if (!input) {
+      return res.status(400).json({
+        error: {
+          message: 'Missing required parameter: input',
+          type: 'invalid_request_error',
+          param: 'input',
+          code: 400
+        }
+      });
+    }
+    
+    // Format request for QWEN embeddings
+    const qwenRequest = {
+      model: model || process.env.QWEN_EMBEDDING_MODEL || 'qwen2.5-embedding',
+      input: input
+    };
+    
+    console.log('Using embedding model:', qwenRequest.model);
+    
+    const response = await axios({
+      method: 'post',
+      url: `${QWEN_API_URL}/embeddings`,
+      headers: {
+        'Authorization': `Bearer ${QWEN_API_KEY}`,
+        'Content-Type': 'application/json'
+      },
+      data: qwenRequest,
+      timeout: 60000 // 60 second timeout
+    });
+    
+    console.log('QWEN Embeddings API response status:', response.status);
+    
+    // Return the response directly - should be compatible format
+    res.json(response.data);
+  } catch (error) {
+    console.error('Error proxying to QWEN Embeddings API:', error.message);
+    
+    if (error.response) {
+      console.error('QWEN API error response:', error.response.data);
+      return res.status(error.response.status).json({
+        error: {
+          message: `QWEN API Error: ${error.response.data.error?.message || error.message}`,
+          type: error.response.data.error?.type || 'api_error',
+          param: null,
+          code: error.response.status
+        }
+      });
+    }
+    
+    res.status(500).json({
+      error: {
+        message: `Internal server error: ${error.message}`,
+        type: 'internal_error',
+        param: null,
+        code: 500
+      }
+    });
+  }
+});
+
+// Generic handler for other paths - redirect to chat/completions by default
+app.post('/api/qwen/*', async (req, res) => {
+  try {
+    console.log(`Received request to ${req.path}, forwarding to completions endpoint`);
+    
+    // Extract the path after /api/qwen/
+    const specificPath = req.path.substring('/api/qwen/'.length);
+    
+    // Default to chat/completions if path is empty or not recognized
+    const apiPath = specificPath || 'chat/completions';
+    
+    const response = await axios({
+      method: 'post',
+      url: `${QWEN_API_URL}/${apiPath}`,
+      headers: {
+        'Authorization': `Bearer ${QWEN_API_KEY}`,
+        'Content-Type': 'application/json'
+      },
+      data: req.body,
+      timeout: 120000 // 2 minute timeout
+    });
+    
+    console.log('QWEN API response status:', response.status);
+    
+    // Return the response directly
+    res.json(response.data);
+  } catch (error) {
+    console.error('Error proxying to QWEN API:', error.message);
+    
+    if (error.response) {
+      console.error('QWEN API error response:', error.response.data);
+      return res.status(error.response.status).json({
+        error: {
+          message: `QWEN API Error: ${error.response.data.error?.message || error.message}`,
+          type: error.response.data.error?.type || 'api_error',
+          param: null,
+          code: error.response.status
+        }
+      });
+    }
+    
+    res.status(500).json({
+      error: {
+        message: `Internal server error: ${error.message}`,
+        type: 'internal_error',
+        param: null,
+        code: 500
+      }
+    });
+  }
 });
 
 // Start the server
 app.listen(PORT, () => {
-  validateEnvVars();
-  console.log(`✅ API Proxy server running at http://localhost:${PORT}`);
-  console.log(`📡 DashScope API URL: ${process.env.QWEN_API_URL}`);
-  console.log(`🔑 DashScope API Key: ${process.env.DASHSCOPE_API_KEY ? '***configured***' : 'MISSING!'}`);
-  console.log(`🤖 DashScope Model: ${process.env.QWEN_MODEL || 'default'}`);
-});
-
-// Handle server errors
-process.on('uncaughtException', (err) => {
-  console.error('Uncaught Exception:', err);
-});
-
-process.on('unhandledRejection', (reason, promise) => {
-  console.error('Unhandled Rejection at:', promise, 'reason:', reason);
+  console.log(`API proxy server running on http://localhost:${PORT}`);
+  console.log(`Health check available at http://localhost:${PORT}/api/health`);
 }); 

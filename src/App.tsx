@@ -1,7 +1,8 @@
-import React from 'react';
+import React, { Suspense } from 'react';
 import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { Toaster } from "@/components/ui/toaster";
+import { Toaster as HotToaster } from "react-hot-toast";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { AuthProvider } from './contexts/AuthContext';
 import ProtectedRoute from './components/auth/ProtectedRoute';
@@ -19,7 +20,9 @@ import AdminDashboard from './pages/AdminDashboard';
 import NotFound from './pages/NotFound';
 import EpicManagement from './pages/EpicManagement';
 import ProjectManagement from './pages/ProjectManagement';
-import QwenApiTestPage from './pages/AiTestPage';
+import TeamManagement from './pages/TeamManagement';
+import Settings from './pages/Settings';
+import Reports from './pages/Reports';
 
 // Create a client with more robust settings
 const queryClient = new QueryClient({
@@ -81,9 +84,19 @@ function App() {
                     <ProjectManagement />
                   </ProtectedRoute>
                 } />
-                <Route path={ROUTES.DASHBOARD.AI_TEST} element={
+                <Route path={ROUTES.DASHBOARD.TEAM} element={
                   <ProtectedRoute>
-                    <QwenApiTestPage />
+                    <TeamManagement />
+                  </ProtectedRoute>
+                } />
+                <Route path={ROUTES.DASHBOARD.REPORTS} element={
+                  <ProtectedRoute>
+                    <Reports />
+                  </ProtectedRoute>
+                } />
+                <Route path={ROUTES.DASHBOARD.SETTINGS} element={
+                  <ProtectedRoute>
+                    <Settings />
                   </ProtectedRoute>
                 } />
                 
@@ -99,27 +112,11 @@ function App() {
                   </ProtectedRoute>
                 } />
                 
-                {/* Not yet implemented routes - redirect to NotFound */}
-                <Route path={ROUTES.DASHBOARD.TEAM} element={
-                  <ProtectedRoute>
-                    <NotFound />
-                  </ProtectedRoute>
-                } />
-                <Route path={ROUTES.DASHBOARD.REPORTS} element={
-                  <ProtectedRoute>
-                    <NotFound />
-                  </ProtectedRoute>
-                } />
-                <Route path={ROUTES.DASHBOARD.SETTINGS} element={
-                  <ProtectedRoute>
-                    <NotFound />
-                  </ProtectedRoute>
-                } />
-                
                 {/* 404 Page */}
                 <Route path="*" element={<NotFound />} />
               </Routes>
               <Toaster />
+              <HotToaster position="top-right" />
             </AuthProvider>
           </TooltipProvider>
         </Router>

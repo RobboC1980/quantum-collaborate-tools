@@ -1,0 +1,250 @@
+// Use triple-slash reference directive to include the type definitions
+/// <reference path="../deno-types.d.ts" />
+
+// Follow this setup guide to integrate the Deno runtime and Supabase functions in your project:
+// https://supabase.com/docs/guides/functions/getting-started
+
+// @ts-ignore: Ignoring error for ESM import from URL
+import { serve } from "https://deno.land/std@0.168.0/http/server.ts"
+// @ts-ignore: Ignoring error for ESM import from URL
+import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.23.0'
+
+const corsHeaders = {
+  'Access-Control-Allow-Origin': '*',
+  'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
+  'Access-Control-Allow-Methods': 'GET, POST, PUT, DELETE, OPTIONS',
+};
+
+serve(async (req) => {
+  // Handle CORS preflight requests
+  if (req.method === 'OPTIONS') {
+    return new Response('ok', { headers: corsHeaders });
+  }
+
+  try {
+    // Get the authorization header from the request
+    const authHeader = req.headers.get('Authorization');
+    if (!authHeader) {
+      return new Response(
+        JSON.stringify({ error: 'No authorization header provided' }),
+        { status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
+    }
+
+    // Create a Supabase client with the auth header
+    const supabaseClient = createClient(
+      // Supabase API URL - env var exported by default when deployed to Supabase
+      Deno.env.get('SUPABASE_URL') ?? '',
+      // Supabase API ANON KEY - env var exported by default when deployed to Supabase
+      Deno.env.get('SUPABASE_ANON_KEY') ?? '',
+      // Create client with Auth header set from request
+      { global: { headers: { Authorization: authHeader } } }
+    );
+
+    // Get the user's profile to check if they have admin permissions
+    const { data: { user }, error: userError } = await supabaseClient.auth.getUser();
+    
+    if (userError || !user) {
+      return new Response(
+        JSON.stringify({ error: userError?.message || 'User not found' }),
+        { status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
+    }
+
+    // Get the user's profile to check if they have admin permissions
+    const { data: profile, error: profileError } = await supabaseClient
+      .from('profiles')
+      .select('*, roles(*)')
+      .eq('id', user.id)
+      .single();
+
+    if (profileError || !profile) {
+      return new Response(
+        JSON.stringify({ error: profileError?.message || 'Profile not found' }),
+        { status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
+    }
+
+    // Check if the user has admin role
+    const isAdmin = profile.roles && profile.roles.name === 'admin';
+    if (!isAdmin) {
+      return new Response(
+        JSON.stringify({ error: 'Unauthorized. Admin privileges required.' }),
+        { status: 403, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
+    }
+
+    // Get the URL path
+    const url = new URL(req.url);
+    const path = url.pathname.split('/').filter(Boolean);
+    const endpoint = path[path.length - 1]; // Get the last segment as endpoint
+
+    // Handle different admin operations based on the endpoint
+    if (endpoint === 'users') {
+      if (req.method === 'GET') {
+        // Get all users with their profiles and roles
+        const { data, error } = await supabaseClient
+          .from('profiles')
+          .select('*, roles(*)');
+
+        if (error) {
+          return new Response(
+            JSON.stringify({ error: error.message }),
+            { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+          );
+        }
+
+        return new Response(
+          JSON.stringify(data),
+          { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+        );
+      }
+    }
+
+    // Handle user-specific operations
+    if (path.includes('users') && path.length > 2) {
+      const userId = path[path.indexOf('users') + 1];
+
+      if (req.method === 'GET') {
+        // Get a specific user by ID
+        const { data, error } = await supabaseClient
+          .from('profiles')
+          .select('*, roles(*)')
+          .eq('id', userId)
+          .single();
+
+        if (error) {
+          return new Response(
+            JSON.stringify({ error: error.message }),
+            { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+          );
+        }
+
+        return new Response(
+          JSON.stringify(data),
+          { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+        );
+      }
+
+      if (req.method === 'PUT') {
+        // Update a user's role
+        const requestData = await req.json();
+        const { roleId } = requestData;
+
+        if (!roleId) {
+          return new Response(
+            JSON.stringify({ error: 'Role ID is required' }),
+            { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+          );
+        }
+
+        // Update the user's role
+        const { data, error } = await supabaseClient
+          .from('profiles')
+          .update({ role_id: roleId })
+          .eq('id', userId)
+          .select('*, roles(*)')
+          .single();
+
+        if (error) {
+          return new Response(
+            JSON.stringify({ error: error.message }),
+            { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+          );
+        }
+
+        return new Response(
+          JSON.stringify(data),
+          { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+        );
+      }
+
+      if (req.method === 'DELETE') {
+        // Delete a user (this is a sensitive operation)
+        // First, get the user's auth data
+        const { data: authData, error: authError } = await supabaseClient.auth.admin.getUserById(userId);
+
+        if (authError) {
+          return new Response(
+            JSON.stringify({ error: authError.message }),
+            { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+          );
+        }
+
+        // Delete the user from auth
+        const { error: deleteAuthError } = await supabaseClient.auth.admin.deleteUser(userId);
+
+        if (deleteAuthError) {
+          return new Response(
+            JSON.stringify({ error: deleteAuthError.message }),
+            { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+          );
+        }
+
+        // The profile should be deleted automatically via RLS or triggers
+        return new Response(
+          JSON.stringify({ success: true, message: 'User deleted successfully' }),
+          { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+        );
+      }
+    }
+
+    // Handle system settings operations
+    if (endpoint === 'settings') {
+      if (req.method === 'GET') {
+        // Get system settings
+        const { data, error } = await supabaseClient
+          .from('system_settings')
+          .select('*');
+
+        if (error) {
+          return new Response(
+            JSON.stringify({ error: error.message }),
+            { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+          );
+        }
+
+        return new Response(
+          JSON.stringify(data),
+          { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+        );
+      }
+
+      if (req.method === 'PUT') {
+        // Update system settings
+        const requestData = await req.json();
+        
+        // Update the settings
+        const { data, error } = await supabaseClient
+          .from('system_settings')
+          .upsert(requestData)
+          .select();
+
+        if (error) {
+          return new Response(
+            JSON.stringify({ error: error.message }),
+            { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+          );
+        }
+
+        return new Response(
+          JSON.stringify(data),
+          { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+        );
+      }
+    }
+
+    // If the endpoint is not found
+    return new Response(
+      JSON.stringify({ error: 'Endpoint not found' }),
+      { status: 404, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+    );
+  } catch (error) {
+    console.error(error);
+    
+    return new Response(
+      JSON.stringify({ error: error instanceof Error ? error.message : String(error) }),
+      { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+    );
+  }
+}); 

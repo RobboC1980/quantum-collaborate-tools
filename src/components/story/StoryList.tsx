@@ -1,9 +1,8 @@
-
 import React, { useState } from 'react';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { PlusCircle, Search, Filter, Trash2, Edit, MoreVertical } from 'lucide-react';
+import { PlusCircle, Search, Filter, Trash2, Edit, MoreVertical, ListChecks } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import StoryCard from './StoryCard';
 import { StoryWithRelations } from '@/types/story';
@@ -27,13 +26,15 @@ interface StoryListProps {
   onCreateStory?: () => void;
   onSelectStory?: (story: StoryWithRelations) => void;
   onDeleteStory?: (story: StoryWithRelations) => void;
+  onGenerateTasks?: (story: StoryWithRelations) => void;
 }
 
 const StoryList: React.FC<StoryListProps> = ({
   stories,
   onCreateStory,
   onSelectStory,
-  onDeleteStory
+  onDeleteStory,
+  onGenerateTasks
 }) => {
   const [searchTerm, setSearchTerm] = useState('');
   const [statusFilter, setStatusFilter] = useState<string>('all');
@@ -146,6 +147,15 @@ const StoryList: React.FC<StoryListProps> = ({
                           <Edit className="mr-2 h-4 w-4" />
                           Edit
                         </DropdownMenuItem>
+                        {onGenerateTasks && (
+                          <DropdownMenuItem onClick={(e) => {
+                            e.stopPropagation();
+                            onGenerateTasks(story);
+                          }}>
+                            <ListChecks className="mr-2 h-4 w-4" />
+                            Generate Tasks
+                          </DropdownMenuItem>
+                        )}
                         <DropdownMenuItem
                           className="text-destructive focus:text-destructive"
                           onClick={(e) => {

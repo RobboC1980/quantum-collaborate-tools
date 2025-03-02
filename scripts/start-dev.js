@@ -34,22 +34,22 @@ if (!fs.existsSync(envPath)) {
 const envContent = fs.readFileSync(envPath, 'utf8');
 const envLines = envContent.split('\n');
 
-// Check if DASHSCOPE_API_KEY is set
-const apiKeyLine = envLines.find(line => line.trim().startsWith('DASHSCOPE_API_KEY='));
+// Check if QWEN_API_KEY is set
+const apiKeyLine = envLines.find(line => line.trim().startsWith('QWEN_API_KEY='));
 if (!apiKeyLine || apiKeyLine.split('=')[1].trim() === '') {
   console.log(chalk.yellow(
-    'Warning: DASHSCOPE_API_KEY is not set in your .env file.\n' +
-    'AI features will not work properly without a valid DashScope API key.\n' +
-    'Get your API key from the Alibaba Cloud DashScope service and add it to your .env file.'
+    'Warning: QWEN_API_KEY is not set in your .env file.\n' +
+    'AI features will not work properly without a valid QWEN API key.\n' +
+    'Get your API key from the QWEN AI service and add it to your .env file.'
   ));
 }
 
 // Check for API URL
 const apiUrlLine = envLines.find(line => line.trim().startsWith('QWEN_API_URL='));
-if (!apiUrlLine || !apiUrlLine.includes('dashscope-intl.aliyuncs.com')) {
+if (!apiUrlLine || !apiUrlLine.includes('api.qwen.ai')) {
   console.log(chalk.yellow(
-    'Warning: QWEN_API_URL is not set to the DashScope API URL in your .env file.\n' +
-    'Make sure it is set to https://dashscope-intl.aliyuncs.com/compatible-mode/v1'
+    'Warning: QWEN_API_URL is not set to the QWEN API URL in your .env file.\n' +
+    'Make sure it is set to https://api.qwen.ai/v1'
   ));
 }
 

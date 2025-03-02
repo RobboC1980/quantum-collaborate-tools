@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import CustomButton from '../ui/CustomButton';
@@ -44,7 +43,7 @@ const Navbar = () => {
         {/* Logo */}
         <Link to="/" className="flex items-center">
           <span className="text-2xl font-bold bg-gradient-to-r from-quantum-700 to-quantum-500 bg-clip-text text-transparent">
-            QuantumScribe
+            QuantumScribe <span className="text-sm font-medium ml-1 text-gray-500">AI-powered</span>
           </span>
         </Link>
 
@@ -100,6 +99,7 @@ const Navbar = () => {
         <button 
           className="md:hidden flex items-center"
           onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
+          aria-label={isMobileMenuOpen ? "Close menu" : "Open menu"}
         >
           <svg 
             xmlns="http://www.w3.org/2000/svg" 

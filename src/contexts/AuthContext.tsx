@@ -3,6 +3,7 @@ import { Session, User } from '@supabase/supabase-js';
 import { supabase } from '@/integrations/supabase/client';
 import { useNavigate } from 'react-router-dom';
 import { toast } from 'sonner';
+import { checkPermission } from '@/services/roleService';
 
 interface AuthContextProps {
   session: Session | null;
@@ -22,6 +23,7 @@ interface AuthContextProps {
     error: any | null;
     data: any | null;
   }>;
+  hasPermission: (permission: string) => Promise<boolean>;
 }
 
 const AuthContext = createContext<AuthContextProps | undefined>(undefined);
@@ -48,7 +50,7 @@ const MOCK_PROFILE = {
 };
 
 // Flag to enable mock authentication (set to true for development)
-const USE_MOCK_AUTH = true;
+const USE_MOCK_AUTH = false;
 
 export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const [session, setSession] = useState<Session | null>(null);
@@ -265,6 +267,18 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     }
   };
 
+  const hasPermission = async (permission: string): Promise<boolean> => {
+    if (!user) return false;
+    
+    if (USE_MOCK_AUTH) {
+      // For development, grant all permissions to the mock user
+      console.log("Mock permission check:", permission);
+      return true;
+    }
+    
+    return await checkPermission(permission);
+  };
+
   return (
     <AuthContext.Provider
       value={{
@@ -276,6 +290,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         signUp,
         signOut,
         updateProfile,
+        hasPermission
       }}
     >
       {children}

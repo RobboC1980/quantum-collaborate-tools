@@ -1,10 +1,10 @@
-
 import React from 'react';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { format, differenceInDays } from 'date-fns';
 import { Calendar, Clock, ArrowRight, AlertCircle } from 'lucide-react';
 import { Progress } from '@/components/ui/progress';
+import ProgressBar from './ProgressBar';
 
 interface ActiveSprintCardProps {
   sprint: {
@@ -88,11 +88,12 @@ const ActiveSprintCard: React.FC<ActiveSprintCardProps> = ({ sprint }) => {
             <span className="text-sm text-blue-700 font-medium">Stories</span>
             <div className="mt-1">
               <span className="text-xl font-bold">{sprint.completedStories}/{sprint.totalStories}</span>
-              <div className="w-full h-1 bg-blue-200 mt-1.5 rounded-full overflow-hidden">
-                <div 
-                  className="h-full bg-blue-500 rounded-full" 
-                  style={{ width: `${(sprint.completedStories / sprint.totalStories) * 100}%` }}
-                ></div>
+              <div className="mt-1.5">
+                <ProgressBar 
+                  value={sprint.completedStories} 
+                  maxValue={sprint.totalStories} 
+                  color="blue"
+                />
               </div>
             </div>
           </div>
@@ -101,11 +102,12 @@ const ActiveSprintCard: React.FC<ActiveSprintCardProps> = ({ sprint }) => {
             <span className="text-sm text-purple-700 font-medium">Story Points</span>
             <div className="mt-1">
               <span className="text-xl font-bold">{sprint.storyPoints.completed}/{sprint.storyPoints.total}</span>
-              <div className="w-full h-1 bg-purple-200 mt-1.5 rounded-full overflow-hidden">
-                <div 
-                  className="h-full bg-purple-500 rounded-full" 
-                  style={{ width: `${(sprint.storyPoints.completed / sprint.storyPoints.total) * 100}%` }}
-                ></div>
+              <div className="mt-1.5">
+                <ProgressBar 
+                  value={sprint.storyPoints.completed} 
+                  maxValue={sprint.storyPoints.total} 
+                  color="purple"
+                />
               </div>
             </div>
           </div>
@@ -117,7 +119,7 @@ const ActiveSprintCard: React.FC<ActiveSprintCardProps> = ({ sprint }) => {
               <div className="flex items-center mt-1">
                 <div className="flex -space-x-1.5">
                   {[...Array(4)].map((_, i) => (
-                    <div key={i} className="w-6 h-6 rounded-full bg-white border-2 border-green-50 flex items-center justify-center text-xs font-medium">
+                    <div key={`team-member-${i}`} className="w-6 h-6 rounded-full bg-white border-2 border-green-50 flex items-center justify-center text-xs font-medium">
                       {String.fromCharCode(65 + i)}
                     </div>
                   ))}

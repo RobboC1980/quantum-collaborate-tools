@@ -1,0 +1,6 @@
+/* Component-specific styles */
+
+/* Chart color dot */
+.chart-color-dot {
+  background-color: var(--dot-color);
+} 

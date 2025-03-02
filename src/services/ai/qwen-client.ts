@@ -66,13 +66,13 @@ export interface QwenConfig {
   useProxy?: boolean;
 }
 
-// Default configuration - using our dedicated API proxy
+// Default configuration - using standard QWEN API
 const defaultConfig: QwenConfig = {
   // In development, we don't need to provide the API key in the client
   // as it will be handled by our proxy server
   apiKey: '',
   baseUrl: '',
-  model: 'qwen-plus', // Updated to use the newer model
+  model: 'qwen2.5-7b-instruct', // Updated to use QWEN 2.5 model
   useProxy: true, // Always use the proxy to avoid exposing API keys in client
 };
 

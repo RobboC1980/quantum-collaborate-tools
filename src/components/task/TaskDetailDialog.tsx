@@ -35,14 +35,13 @@ import {
   Play,
   Pause,
   PlusCircle,
-  Trash2
+  Trash2,
+  Sparkles
 } from 'lucide-react';
 import { TaskWithRelations, TaskStatus, TaskPriority, Subtask } from '@/types/task';
 import { User as UserType, mockUsers } from '@/types/user';
 import { StoryWithRelations, mockStories } from '@/types/story';
-import TaskAiAssistant from './TaskAiAssistant';
-import { toast } from '@/components/ui/use-toast';
-import { GeneratedTask } from '@/services/ai/task-generator';
+import WritingAssistant from '@/components/ai/WritingAssistant';
 
 interface TaskDetailDialogProps {
   task?: TaskWithRelations;
@@ -183,73 +182,13 @@ const TaskDetailDialog: React.FC<TaskDetailDialogProps> = ({
     setNewComment('');
   };
 
-  // Handlers for AI-generated tasks and subtasks
-  const handleTasksGenerated = (tasks: GeneratedTask[]) => {
-    if (tasks.length > 0) {
-      // Use the first generated task to update the form
-      const generatedTask = tasks[0];
-      
-      setFormData({
-        ...formData,
-        title: generatedTask.title,
-        description: generatedTask.description,
-      });
-      
-      toast({
-        title: "Task Applied",
-        description: "AI-generated task has been applied to the form",
-      });
-    }
-  };
-  
-  const handleSubtasksGenerated = (subtasks: string[]) => {
-    // Convert string subtasks into Subtask objects
-    const newSubtasks: Subtask[] = subtasks.map(title => ({
-      id: `ST-${Math.floor(Math.random() * 1000)}`,
-      title,
-      completed: false
-    }));
-    
-    // Add the new subtasks to existing ones
-    setFormData({
-      ...formData,
-      subtasks: [...(formData.subtasks || []), ...newSubtasks]
-    });
-    
-    toast({
-      title: "Subtasks Applied",
-      description: `${subtasks.length} AI-generated subtasks have been added`,
-    });
-  };
-  
-  const handleEstimateGenerated = (points: number) => {
-    // Assuming points can be translated to estimated hours
-    const estimatedHours = points * 1.5; // Simple conversion as an example
-    
-    setFormData({
-      ...formData,
-      estimatedHours: estimatedHours
-    });
-    
-    toast({
-      title: "Estimate Applied",
-      description: `AI-generated estimate of ${estimatedHours} hours has been applied`,
-    });
-  };
-  
-  const handleCompletionCriteriaGenerated = (criteria: string[]) => {
-    // Join the criteria into a single string and append to description
-    const criteriaText = "\n\nCompletion Criteria:\n" + criteria.map(c => `- ${c}`).join("\n");
-    
-    setFormData({
-      ...formData,
-      description: (formData.description || '') + criteriaText
-    });
-    
-    toast({
-      title: "Completion Criteria Applied",
-      description: "AI-generated completion criteria have been added to the description",
-    });
+  // State for showing AI writing assistant
+  const [showAiAssistant, setShowAiAssistant] = useState(false);
+
+  // Apply AI-generated content to description
+  const handleApplyAiContent = (content: string) => {
+    handleChange('description', content);
+    setShowAiAssistant(false);
   };
 
   return (
@@ -275,6 +214,38 @@ const TaskDetailDialog: React.FC<TaskDetailDialogProps> = ({
           </TabsList>
           
           <TabsContent value="details" className="space-y-4 py-4">
+            {/* AI Assistant Button */}
+            {!showAiAssistant && (
+              <Button 
+                variant="outline" 
+                className="w-full mb-4 border-dashed border-primary/50 flex gap-2 items-center"
+                onClick={() => setShowAiAssistant(true)}
+              >
+                <Sparkles className="h-4 w-4 text-primary" />
+                Use AI Writing Assistant
+              </Button>
+            )}
+
+            {/* AI Writing Assistant */}
+            {showAiAssistant && (
+              <div className="mb-4">
+                <WritingAssistant 
+                  task={{
+                    title: formData.title || '',
+                    description: formData.description || ''
+                  }}
+                  onApplyContent={handleApplyAiContent} 
+                />
+                <Button 
+                  variant="ghost" 
+                  className="mt-2"
+                  onClick={() => setShowAiAssistant(false)}
+                >
+                  Close AI Assistant
+                </Button>
+              </div>
+            )}
+
             <div className="grid grid-cols-1 gap-4">
               <div className="space-y-2">
                 <Label htmlFor="title">Title *</Label>
